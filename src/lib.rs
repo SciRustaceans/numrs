@@ -11,3 +11,4 @@ pub mod utils;
 pub mod svd;
 pub mod lu_decomp;
 pub mod cyclic;
+pub mod sparse;
