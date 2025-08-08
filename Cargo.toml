@@ -1,0 +1,12 @@
+[package]
+name = "banded-matrix-solver"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "banded_matrix_solver"
+path = "src/lib.rs"
+
+[dependencies]
+rayon = "1.8"
+approx = "0.5"
