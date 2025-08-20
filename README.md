@@ -19,7 +19,7 @@ Numrs
 3. utils function included for utility functions which aid SVD
 4. Added all sparse marix methods
 5. Added linbcg -> a conjugate gradient method for sparse systems
-6. Added Vandermode and Toplitz methods
+6. Added Vandermode and Toeplz methods both with unit test for general cases and edge cases
 7. Cholsky method
 8. QR decomp
 ## TODO 
