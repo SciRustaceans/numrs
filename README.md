@@ -24,15 +24,14 @@ Numrs
 8. QR decomp
 9. Added polynomial interpolation and extrapolation from N points
 10. Added polynomial interpolation and extrapolation from N points for rational functions
+11. cubic spline
 ## TODO 
 1.Fix SVD its failing 4 of the unit tests
 2.Add cholesky decomp
 3.Add QR decmp
-4.Begin Interpolation mand extrapolation methods
-    1. Polynomial
-    2. Cubic spline
+4.Begin Interpolation mand extrapolation methodse
     3. Ordered table search
     4. Interpolation in two dimensions
-
+5. begin integration methods
 ## Example usage
 Add some of the tests as examples
