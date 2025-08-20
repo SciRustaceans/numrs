@@ -22,6 +22,8 @@ Numrs
 6. Added Vandermode and Toeplz methods both with unit test for general cases and edge cases
 7. Cholsky method
 8. QR decomp
+9. Added polynomial interpolation and extrapolation from N points
+10. Added polynomial interpolation and extrapolation from N points for rational functions
 ## TODO 
 1.Fix SVD its failing 4 of the unit tests
 2.Add cholesky decomp
