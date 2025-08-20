@@ -7,6 +7,7 @@
 
 // This makes the modules and their public contents (like the BandedMatrix struct)
 // available to users of your library.
+//This section pertains to solution to linear equations along with several matrix mehthods
 pub mod utils;
 pub mod svd;
 pub mod lu_decomp;
@@ -21,3 +22,5 @@ pub mod banbks;
 pub mod bandec;
 pub mod gaussjdcmp;
 pub mod linbcg;
+
+//This section peratins to interpolation and extrapolation
