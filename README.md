@@ -26,12 +26,13 @@ Numrs
 10. Added polynomial interpolation and extrapolation from N points for rational functions
 11. cubic spline
 ## TODO 
-1.Fix SVD its failing 4 of the unit tests
-2.Add cholesky decomp
-3.Add QR decmp
-4.Begin Interpolation mand extrapolation methodse
-    3. Ordered table search
+1. Fix SVD its failing 4 of the unit tests
+2. Add cholesky decomp
+3. Add QR decmp
+4. Begin Interpolation mand extrapolation methodse
+    3. Ordered table search (DONE)
     4. Interpolation in two dimensions
-5. begin integration methods
+5. Begin integration methods
+6. Start documentation on method usage 
 ## Example usage
 Add some of the tests as examples
