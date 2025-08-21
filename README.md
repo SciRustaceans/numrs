@@ -33,6 +33,7 @@ Numrs
     3. Ordered table search (DONE)
     4. Interpolation in two dimensions
 5. Begin integration methods
-6. Start documentation on method usage 
+6. Start documentation on method usage
+7. Update lib.rs with new functions 
 ## Example usage
 Add some of the tests as examples
