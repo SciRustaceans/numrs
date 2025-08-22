@@ -3,13 +3,13 @@
 Numrs
 ├── Cargo.toml
 ├── src/
-│   ├── lib.rs         # Main library exports 
-│   ├── methods.rs         # Method functions (Main mathematical algorithms)
-│   └── utils.rs       # Helper functions for method functions
+│   ├── lib.rs          # Main library exports
+│   ├── methods.rs      # Method functions (Main mathematical algorithms)
+│   └── utils.rs        # Helper functions for method functions
 └── tests/
     ├── unit/
     │   ├── mod.rs      # Test module declaration
-    │   ├──method.rs    # Method tests
+    │   └── method.rs   # Method tests
     └── integration/
         └── basic.rs    # Integration tests
 
@@ -25,15 +25,13 @@ Numrs
 9. Added polynomial interpolation and extrapolation from N points
 10. Added polynomial interpolation and extrapolation from N points for rational functions
 11. cubic spline
+12. Polynomial coefficients polcoe
+13. Polynomial coefficients polcof
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests
-2. Add cholesky decomp
-3. Add QR decmp
-4. Begin Interpolation mand extrapolation methodse
-    3. Ordered table search (DONE)
-    4. Interpolation in two dimensions
-5. Begin integration methods
-6. Start documentation on method usage
-7. Update lib.rs with new functions 
+2. Begin integration methods
+3. Start documentation on method usage
+4. Update lib.rs with new functions 
+5. Add mutlithreading to interpolation methods including polcoe and polcof
 ## Example usage
 Add some of the tests as examples
