@@ -26,6 +26,9 @@ Numrs
 11. cubic spline
 12. Polynomial coefficients polcoe
 13. Polynomial coefficients polcof
+14. Added splie2
+15. Added splin2
+16. Wrapped up all interpolation and extrapolation methods
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests
 2. Begin integration methods
