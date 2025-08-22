@@ -12,7 +12,6 @@ Numrs
     │   └── method.rs   # Method tests
     └── integration/
         └── basic.rs    # Integration tests
-
 ## Progress
 1. restructured the project to work as a lib instead of needing a main.rs 
 2. lu_decomp works and passes all tests
@@ -32,6 +31,6 @@ Numrs
 2. Begin integration methods
 3. Start documentation on method usage
 4. Update lib.rs with new functions 
-5. Add mutlithreading to interpolation methods including polcoe and polcof
+5. Add mutlithreading to interpolation methods to polcoe
 ## Example usage
 Add some of the tests as examples
