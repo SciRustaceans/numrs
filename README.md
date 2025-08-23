@@ -29,11 +29,13 @@ Numrs
 14. Added splie2
 15. Added splin2
 16. Wrapped up all interpolation and extrapolation methods
+17. Added 3 trapezoidal integration methods with different levels of refinment
+18. Added integration method using simpson method
 ## TODO 
-1. Fix SVD its failing 4 of the unit tests
-2. Begin integration methods
-3. Start documentation on method usage
-4. Update lib.rs with new functions 
-5. Add mutlithreading to interpolation methods to polcoe
+1. Fix SVD its failing 4 of the unit tests *
+2. Begin integration methods (Started) **
+3. Start documentation on method usage *
+4. Update lib.rs with new functions ***
+5. Add mutlithreading to interpolation methods to polcoe *
 ## Example usage
 Add some of the tests as examples
