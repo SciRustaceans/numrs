@@ -37,5 +37,10 @@ Numrs
 3. Start documentation on method usage *
 4. Update lib.rs with new functions ***
 5. Add mutlithreading to interpolation methods to polcoe *
+6. Add Romberg integration methods***
+7. Add improper integral methods***
+8. Add gaussian quadrature and orthogonal polynomial methods for integration***
+9. Add multidimensinal methods***
+10. combine routines for linear algebra methods to clean up library*
 ## Example usage
 Add some of the tests as examples
