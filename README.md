@@ -32,15 +32,17 @@ Numrs
 17. Added 3 trapezoidal integration methods with different levels of refinment
 18. Added integration method using simpson method
 19. Added Romberg integration method
-20. Began methods for improper functions -> midpnt.rs 
+20. Began methods for improper functions -> midpnt.rs
+21. Finished methods for improper function (midpnt.rsm midinf.rs. midsql.rs.midsqu.rs, and midexp.rs), all methods have robust unit testing to check for all edge cases.
+22. Started Gaussian integration methods 
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
-2. Begin integration methods (Started) **
+2. Begin integration methods (Starting chapter 4.5) **
 3. Start documentation on method usage *
 4. Update lib.rs with new functions ***
 5. Add mutlithreading to interpolation methods to polcoe *
 6. Add Romberg integration methods*** (Complete)
-7. Add improper integral methods*** (Started)
+7. Add improper integral methods*** (Complete)
 8. Add gaussian quadrature and orthogonal polynomial methods for integration***
 9. Add multidimensinal methods***
 10. combine routines for linear algebra methods to clean up library*
