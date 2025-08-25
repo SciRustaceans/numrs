@@ -31,16 +31,18 @@ Numrs
 16. Wrapped up all interpolation and extrapolation methods
 17. Added 3 trapezoidal integration methods with different levels of refinment
 18. Added integration method using simpson method
+19. Added Romberg integration method
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Started) **
 3. Start documentation on method usage *
 4. Update lib.rs with new functions ***
 5. Add mutlithreading to interpolation methods to polcoe *
-6. Add Romberg integration methods***
+6. Add Romberg integration methods*** (Complete)
 7. Add improper integral methods***
 8. Add gaussian quadrature and orthogonal polynomial methods for integration***
 9. Add multidimensinal methods***
 10. combine routines for linear algebra methods to clean up library*
+11. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
 ## Example usage
 Add some of the tests as examples
