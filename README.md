@@ -36,6 +36,7 @@ Numrs
 21. Finished methods for improper function (midpnt.rsm midinf.rs. midsql.rs.midsqu.rs, and midexp.rs), all methods have robust unit testing to check for all edge cases.
 22. Started Gaussian integration methods -> added gauleg.rs, gaulag.rs, gauher.rs, gaujac.rs, and gaucof.rs with multithread implementations and rust optimizations
 23. Added othog.rs
+24. Added multidimensional integration algorithm
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Starting chapter 4.5) **
