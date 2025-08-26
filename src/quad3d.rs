@@ -1,0 +1,376 @@
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
+use std::f64::consts::PI;
+
+/// Trait for 3D functions to integrate
+pub trait Function3D: Sync + Send {
+    fn evaluate(&self, x: f64, y: f64, z: f64) -> f64;
+}
+
+/// Implementation for function pointers
+impl<F> Function3D for F
+where
+    F: Fn(f64, f64, f64) -> f64 + Sync + Send,
+{
+    fn evaluate(&self, x: f64, y: f64, z: f64) -> f64 {
+        self(x, y, z)
+    }
+}
+
+/// Gaussian quadrature integration for 1D functions
+pub fn qgaus<F>(func: F, a: f64, b: f64) -> f64
+where
+    F: Fn(f64) -> f64,
+{
+    // 10-point Gaussian quadrature weights and abscissae
+    const N: usize = 10;
+    const X: [f64; N] = [
+        -0.9739065285171717,
+        -0.8650633666889845,
+        -0.6794095682990244,
+        -0.4333953941292472,
+        -0.14887433898163122,
+        0.14887433898163122,
+        0.4333953941292472,
+        0.6794095682990244,
+        0.8650633666889845,
+        0.9739065285171717,
+    ];
+    const W: [f64; N] = [
+        0.0666713443086881,
+        0.1494513491505806,
+        0.2190863625159821,
+        0.2692667193099963,
+        0.2955242247147529,
+        0.2955242247147529,
+        0.2692667193099963,
+        0.2190863625159821,
+        0.1494513491505806,
+        0.0666713443086881,
+    ];
+
+    let xm = 0.5 * (b + a);
+    let xr = 0.5 * (b - a);
+    
+    let mut sum = 0.0;
+    for i in 0..N {
+        let dx = xr * X[i];
+        sum += W[i] * func(xm + dx);
+    }
+    sum * xr
+}
+
+/// 3D quadrature integration using Gaussian quadrature
+/// 
+/// # Arguments
+/// * `func` - The 3D function to integrate
+/// * `x1`, `x2` - Integration limits in x-direction
+/// * `yy1`, `yy2` - Functions that return y-integration limits for a given x
+/// * `z1`, `z2` - Functions that return z-integration limits for given x and y
+pub fn quad3d<F, Y1, Y2, Z1, Z2>(
+    func: F,
+    x1: f64,
+    x2: f64,
+    yy1: Y1,
+    yy2: Y2,
+    z1: Z1,
+    z2: Z2,
+) -> f64
+where
+    F: Function3D,
+    Y1: Fn(f64) -> f64 + Sync + Send,
+    Y2: Fn(f64) -> f64 + Sync + Send,
+    Z1: Fn(f64, f64) -> f64 + Sync + Send,
+    Z2: Fn(f64, f64) -> f64 + Sync + Send,
+{
+    let func_arc = Arc::new(func);
+    
+    // Integrate over x
+    qgaus(
+        |x| {
+            let y_low = yy1(x);
+            let y_high = yy2(x);
+            let func_clone = Arc::clone(&func_arc);
+            
+            // Integrate over y for this x
+            qgaus(
+                move |y| {
+                    let z_low = z1(x, y);
+                    let z_high = z2(x, y);
+                    let func_clone2 = Arc::clone(&func_clone);
+                    
+                    // Integrate over z for this (x, y)
+                    qgaus(
+                        move |z| func_clone2.evaluate(x, y, z),
+                        z_low,
+                        z_high,
+                    )
+                },
+                y_low,
+                y_high,
+            )
+        },
+        x1,
+        x2,
+    )
+}
+
+/// Thread-safe version using parallel integration
+pub fn quad3d_parallel<F, Y1, Y2, Z1, Z2>(
+    func: F,
+    x1: f64,
+    x2: f64,
+    yy1: Y1,
+    yy2: Y2,
+    z1: Z1,
+    z2: Z2,
+) -> f64
+where
+    F: Function3D,
+    Y1: Fn(f64) -> f64 + Sync + Send,
+    Y2: Fn(f64) -> f64 + Sync + Send,
+    Z1: Fn(f64, f64) -> f64 + Sync + Send,
+    Z2: Fn(f64, f64) -> f64 + Sync + Send,
+{
+    let func_arc = Arc::new(func);
+    
+    // Use adaptive quadrature with parallel sampling for better performance
+    adaptive_quadrature_3d_parallel(func_arc, x1, x2, yy1, yy2, z1, z2, 3)
+}
+
+/// Adaptive 3D quadrature with parallel computation
+fn adaptive_quadrature_3d_parallel<F, Y1, Y2, Z1, Z2>(
+    func: Arc<F>,
+    x1: f64,
+    x2: f64,
+    yy1: Y1,
+    yy2: Y2,
+    z1: Z1,
+    z2: Z2,
+    depth: usize,
+) -> f64
+where
+    F: Function3D,
+    Y1: Fn(f64) -> f64 + Sync + Send,
+    Y2: Fn(f64) -> f64 + Sync + Send,
+    Z1: Fn(f64, f64) -> f64 + Sync + Send,
+    Z2: Fn(f64, f64) -> f64 + Sync + Send,
+{
+    if depth == 0 {
+        // Base case: use standard quadrature
+        return quad3d(
+            func.as_ref(),
+            x1,
+            x2,
+            &yy1,
+            &yy2,
+            &z1,
+            &z2,
+        );
+    }
+
+    let x_mid = (x1 + x2) / 2.0;
+    
+    // Process sub-regions in parallel
+    let (result1, result2) = rayon::join(
+        || adaptive_quadrature_3d_parallel(
+            Arc::clone(&func),
+            x1,
+            x_mid,
+            &yy1,
+            &yy2,
+            &z1,
+            &z2,
+            depth - 1,
+        ),
+        || adaptive_quadrature_3d_parallel(
+            Arc::clone(&func),
+            x_mid,
+            x2,
+            &yy1,
+            &yy2,
+            &z1,
+            &z2,
+            depth - 1,
+        ),
+    );
+    
+    result1 + result2
+}
+
+/// Simple sphere integration bounds
+pub fn sphere_y1(_x: f64) -> f64 { -1.0 }
+pub fn sphere_y2(_x: f64) -> f64 { 1.0 }
+pub fn sphere_z1(x: f64, y: f64) -> f64 { -f64::sqrt(1.0 - x * x - y * y) }
+pub fn sphere_z2(x: f64, y: f64) -> f64 { f64::sqrt(1.0 - x * x - y * y) }
+
+/// Cube integration bounds
+pub fn cube_y1(_x: f64) -> f64 { 0.0 }
+pub fn cube_y2(_x: f64) -> f64 { 1.0 }
+pub fn cube_z1(_x: f64, _y: f64) -> f64 { 0.0 }
+pub fn cube_z2(_x: f64, _y: f64) -> f64 { 1.0 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    /// Constant function for testing
+    fn constant_function(_x: f64, _y: f64, _z: f64) -> f64 {
+        1.0
+    }
+
+    /// Linear function for testing
+    fn linear_function(x: f64, y: f64, z: f64) -> f64 {
+        x + y + z
+    }
+
+    /// Quadratic function for testing
+    fn quadratic_function(x: f64, y: f64, z: f64) -> f64 {
+        x * x + y * y + z * z
+    }
+
+    #[test]
+    fn test_constant_function_cube() {
+        let result = quad3d(
+            constant_function,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        // Volume of unit cube is 1.0
+        assert_abs_diff_eq!(result, 1.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_linear_function_cube() {
+        let result = quad3d(
+            linear_function,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        // ∫∫∫ (x + y + z) dxdydz from 0 to 1 = 1.5
+        assert_abs_diff_eq!(result, 1.5, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_quadratic_function_cube() {
+        let result = quad3d(
+            quadratic_function,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        // ∫∫∫ (x² + y² + z²) dxdydz from 0 to 1 = 1.0
+        assert_abs_diff_eq!(result, 1.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_constant_function_sphere() {
+        let result = quad3d(
+            constant_function,
+            -1.0, 1.0,
+            sphere_y1, sphere_y2,
+            sphere_z1, sphere_z2,
+        );
+        
+        // Volume of unit sphere is 4/3 * π
+        let expected = 4.0 / 3.0 * PI;
+        assert_abs_diff_eq!(result, expected, epsilon = 1e-2);
+    }
+
+    #[test]
+    fn test_parallel_vs_sequential() {
+        // Test that parallel and sequential versions give similar results
+        let seq_result = quad3d(
+            quadratic_function,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        let par_result = quad3d_parallel(
+            quadratic_function,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        assert_abs_diff_eq!(seq_result, par_result, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_qgaus_basic() {
+        // Test 1D Gaussian quadrature
+        let result = qgaus(|x| x * x, 0.0, 1.0);
+        assert_abs_diff_eq!(result, 1.0 / 3.0, epsilon = 1e-10);
+        
+        let result2 = qgaus(f64::sin, 0.0, PI);
+        assert_abs_diff_eq!(result2, 2.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_function_trait() {
+        // Test that function pointers work with the trait
+        fn custom_func(x: f64, y: f64, z: f64) -> f64 {
+            x * y * z
+        }
+        
+        let result = quad3d(
+            custom_func,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        // ∫∫∫ (x*y*z) dxdydz from 0 to 1 = 1/8
+        assert_abs_diff_eq!(result, 1.0 / 8.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_closures() {
+        // Test that closures work
+        let a = 2.0;
+        let closure = move |x: f64, y: f64, z: f64| a * x + y + z;
+        
+        let result = quad3d(
+            closure,
+            0.0, 1.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        // ∫∫∫ (2x + y + z) dxdydz from 0 to 1 = 1 + 0.5 + 0.5 = 2.0
+        assert_abs_diff_eq!(result, 2.0, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_edge_case_zero_volume() {
+        // Test integration over zero-volume region
+        let result = quad3d(
+            constant_function,
+            0.0, 0.0,
+            cube_y1, cube_y2,
+            cube_z1, cube_z2,
+        );
+        
+        assert_abs_diff_eq!(result, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_negative_bounds() {
+        let result = quad3d(
+            |x, y, z| x + y + z,
+            -1.0, 1.0,
+            |_| -1.0, |_| 1.0,
+            |_, _| -1.0, |_, _| 1.0,
+        );
+        
+        // Integral of odd function over symmetric region should be 0
+        assert_abs_diff_eq!(result, 0.0, epsilon = 1e-6);
+    }
+}
