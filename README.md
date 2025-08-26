@@ -39,15 +39,16 @@ Numrs
 24. Added multidimensional integration algorithm
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
-2. Begin integration methods (Starting chapter 4.5) **
+2. Begin integration methods (Complete) **
 3. Start documentation on method usage *
 4. Update lib.rs with new functions ***
 5. Add mutlithreading to interpolation methods to polcoe *
 6. Add Romberg integration methods*** (Complete)
 7. Add improper integral methods*** (Complete)
-8. Add gaussian quadrature and orthogonal polynomial methods for integration (in progress)***
-9. Add multidimensinal methods***
-10. combine routines for linear algebra methods to clean up library*
-11. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
+8. Add gaussian quadrature and orthogonal polynomial methods for integration (Complete)***
+9. Add multidimensinal methods (Complete)***
+10. Begin Chapter 5 Evaluation of Funcitons ***
+11. combine routines for linear algebra methods to clean up library*
+12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
 ## Example usage
 Add some of the tests as examples
