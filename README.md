@@ -34,7 +34,7 @@ Numrs
 19. Added Romberg integration method
 20. Began methods for improper functions -> midpnt.rs
 21. Finished methods for improper function (midpnt.rsm midinf.rs. midsql.rs.midsqu.rs, and midexp.rs), all methods have robust unit testing to check for all edge cases.
-22. Started Gaussian integration methods 
+22. Started Gaussian integration methods -> added gauleg.rs, gaulag.rs, gauher.rs, gaujac.rs, and gaucof.rs with multithread implementations and rust optimizations
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Starting chapter 4.5) **
@@ -43,7 +43,7 @@ Numrs
 5. Add mutlithreading to interpolation methods to polcoe *
 6. Add Romberg integration methods*** (Complete)
 7. Add improper integral methods*** (Complete)
-8. Add gaussian quadrature and orthogonal polynomial methods for integration***
+8. Add gaussian quadrature and orthogonal polynomial methods for integration (in progress)***
 9. Add multidimensinal methods***
 10. combine routines for linear algebra methods to clean up library*
 11. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
