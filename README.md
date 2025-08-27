@@ -37,6 +37,7 @@ Numrs
 22. Started Gaussian integration methods -> added gauleg.rs, gaulag.rs, gauher.rs, gaujac.rs, and gaucof.rs with multithread implementations and rust optimizations
 23. Added othog.rs
 24. Added multidimensional integration algorithm
+25. Added euler summation (eulsum.rs) kicking off chapter 5
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
