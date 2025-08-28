@@ -38,6 +38,14 @@ Numrs
 23. Added othog.rs
 24. Added multidimensional integration algorithm
 25. Added euler summation (eulsum.rs) kicking off chapter 5
+26. Added polynomial and rational function methods (ddpoly and poldiv)
+27. Added numerical derivative method dfridr
+28. Added chebyshev approximation methods chebft, chebev
+29. Added derivates and integral methods of Chebyshev aprroximated functions
+30. Added polynomial aprroximation from Chebyshev coefficients chebpc and pcshft
+31. Added efficient power series routine pccheb
+32. Added pade approximants
+33. Rational Chebyshev approximation method ratlsq
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
@@ -48,8 +56,9 @@ Numrs
 7. Add improper integral methods*** (Complete)
 8. Add gaussian quadrature and orthogonal polynomial methods for integration (Complete)***
 9. Add multidimensinal methods (Complete)***
-10. Begin Chapter 5 Evaluation of Funcitons ***
+10. Begin Chapter 5 Evaluation of Funcitons (Completed Chapter)***
 11. combine routines for linear algebra methods to clean up library*
 12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
+13. Begin special funcitons ***
 ## Example usage
 Add some of the tests as examples
