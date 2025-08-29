@@ -47,6 +47,7 @@ Numrs
 32. Added pade approximants
 33. Rational Chebyshev approximation method ratlsq
 34. Added gamma and factrl functions from the special functions seciton
+35. Added bico, factln and beta fuctions 
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
