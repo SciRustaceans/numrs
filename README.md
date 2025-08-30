@@ -47,7 +47,8 @@ Numrs
 32. Added pade approximants
 33. Rational Chebyshev approximation method ratlsq
 34. Added gamma and factrl functions from the special functions seciton
-35. Added bico, factln and beta fuctions 
+35. Added bico, factln and beta fuctions
+36. Added gamma_series, gamma_continued_funciton, error_functions to library
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
@@ -61,6 +62,6 @@ Numrs
 10. Begin Chapter 5 Evaluation of Funcitons (Completed Chapter)***
 11. combine routines for linear algebra methods to clean up library*
 12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
-13. Begin special funcitons ***
+13. Begin special funcitons (In progress) *** 
 ## Example usage
 Add some of the tests as examples
