@@ -48,7 +48,8 @@ Numrs
 33. Rational Chebyshev approximation method ratlsq
 34. Added gamma and factrl functions from the special functions seciton
 35. Added bico, factln and beta fuctions
-36. Added gamma_series, gamma_continued_funciton, error_functions to library
+36. Added exponential integral methods, EI funciton method, and Incomplete Beta function
+37. Added gamma_series, gamma_continued_funciton, error_functions to library
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
