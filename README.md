@@ -51,6 +51,7 @@ Numrs
 36. Added exponential integral methods, EI funciton method, and Incomplete Beta function
 37. Added gamma_series, gamma_continued_funciton, error_functions to library
 38. Added Bessel_j0 and Bessel_y0 functions with unit tests and benchmarking funcitons
+39. Added Bessel_j1 and Bessel_y1 function with unit tests and benchmarking functions
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
