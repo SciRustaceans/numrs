@@ -67,6 +67,7 @@ Numrs
 10. Begin Chapter 5 Evaluation of Funcitons (Completed Chapter)***
 11. combine routines for linear algebra methods to clean up library*
 12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
-13. Begin special funcitons (In progress) *** 
+13. Begin special funcitons (In progress) ***
+14. Begin airy functions
 ## Example usage
 Add some of the tests as examples
