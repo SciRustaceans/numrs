@@ -53,7 +53,7 @@ Numrs
 38. Added Bessel_j0 and Bessel_y0 functions with unit tests and benchmarking funcitons
 39. Added Bessel_j1 and Bessel_y1 function with unit tests and benchmarking functions
 40. Added Bessel_j for rational numbers and bessel_k0
-41. Completed all Bessel functions (FINALLY) including beschd
+41. Completed all Bessel functions (FINALLY) including beschd and bessik.rs
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
@@ -68,6 +68,6 @@ Numrs
 11. combine routines for linear algebra methods to clean up library*
 12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
 13. Begin special funcitons (In progress) ***
-14. Begin airy functions
+14. Begin airy functions (In progress) ***
 ## Example usage
 Add some of the tests as examples
