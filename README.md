@@ -55,6 +55,7 @@ Numrs
 40. Added Bessel_j for rational numbers and bessel_k0
 41. Completed all Bessel functions (FINALLY) including beschd and bessik.rs
 42. Added Airy function, Spherical bessel function, and PLGNDR.rs
+43. Added Frenel integrals
 ## TODO 
 1. Fix SVD its failing 4 of the unit tests *
 2. Begin integration methods (Complete) **
