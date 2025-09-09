@@ -68,6 +68,6 @@ Numrs
 11. combine routines for linear algebra methods to clean up library*
 12. Link lib routines to other routines which use them instead of copying them to reduce redundancies in the codebase***
 13. Begin special funcitons (In progress) ***
-14. Begin airy functions (In progress) ***
+14. Begin airy functions (Complete) ***
 ## Example usage
 Add some of the tests as examples
