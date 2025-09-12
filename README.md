@@ -1,12 +1,22 @@
 # Numrs
 
-A Rust library for advanced numerical methods, covering linear algebra, interpolation, integration, approximation, and special functions.  
+A rust native build of numpy and scipy using modern algorithms, multithreading and parallelization. Built for speed, precision and performance.   
 
 ---
 
 ## 📂 Project Structure
-<pre> ```text Numrs ├── Cargo.toml ├── src/ │ ├── lib.rs # Main library exports │ ├── methods.rs # Core mathematical algorithms │ └── utils.rs # Helper functions for algorithms └── tests/ ├── unit/ │ ├── mod.rs # Unit test module declaration │ └── method.rs # Unit tests for methods └── integration/ └── basic.rs # Integration tests ``` </pre>
-
+Numrs
+├── Cargo.toml
+├── src/
+│ ├── lib.rs # Main library exports
+│ ├── methods.rs # Core mathematical algorithms
+│ └── utils.rs # Helper functions for algorithms
+└── tests/
+├── unit/
+│ ├── mod.rs # Unit test module declaration
+│ └── method.rs # Unit tests for methods
+└── integration/
+└── basic.rs # Integration tests
 ---
 
 ## ✅ Progress
@@ -59,7 +69,7 @@ A Rust library for advanced numerical methods, covering linear algebra, interpol
 - [ ] Combine and refactor linear algebra routines for cleaner structure  
 - [ ] Link library routines internally to reduce redundancy  
 - [ ] Expand documentation on method usage  
-- [ ] Continue development of special functions (in progress)  
+- [ ] Continue development of special functions (in progress) -> Current method Dawson integrals  
 
 ---
 
