@@ -59,6 +59,7 @@ Numrs
 - **Bessel functions** (`j0`, `y0`, `j1`, `y1`, `j`, `k0`, `beschd`, `bessik`)  
 - Airy functions, spherical Bessel functions, Legendre polynomials (`PLGNDR.rs`)  
 - Fresnel integrals, Cosine and Sine integrals
+- Dawson integrals, **Carlson Elliptical integrals** (`first`, `second`, `third`,  `degenrate`), **Lengendre Elliptical integrals**  (`first`, `second`, `third`), Jacobian elliptical integral
 
 ---
 
@@ -69,7 +70,7 @@ Numrs
 - [ ] Combine and refactor linear algebra routines for cleaner structure  
 - [ ] Link library routines internally to reduce redundancy  
 - [ ] Expand documentation on method usage  
-- [ ] Continue development of special functions (in progress) -> Current method Dawson integrals  
+- [ ] Continue development of special functions (in progress) -> Current methods Hypergeometic functions  
 
 ---
 
