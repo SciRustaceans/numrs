@@ -71,7 +71,8 @@ Numrs
 - [ ] Link library routines internally to reduce redundancy  
 - [ ] Expand documentation on method usage  
 - [ ] Continue development of special functions (in progress) -> Current methods Hypergeometic functions  
-
+- [ ] Random numbers (especially Monte Carlo Methods)
+- [ ] Root finding and nonlinear sets of equations
 ---
 
 ## 📖 Documentation
