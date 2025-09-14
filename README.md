@@ -70,7 +70,7 @@ Numrs
 - [ ] Combine and refactor linear algebra routines for cleaner structure  
 - [ ] Link library routines internally to reduce redundancy  
 - [ ] Expand documentation on method usage  
-- [ ] Continue development of special functions (in progress) -> Current methods Hypergeometic functions  
+- [ ] Hypergeometric and Hypergeometric derivatives  
 - [ ] Random numbers (especially Monte Carlo Methods)
 - [ ] Root finding and nonlinear sets of equations
 ---
