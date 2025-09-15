@@ -61,6 +61,13 @@ Numrs
 - Fresnel integrals, Cosine and Sine integrals
 - Dawson integrals, **Carlson Elliptical integrals** (`first`, `second`, `third`,  `degenrate`), **Lengendre Elliptical integrals**  (`first`, `second`, `third`), Jacobian elliptical integral
 
+### Random Numbers
+- Monte Carlo Vegas: Adaptive
+- Monte Carlo Miser: Adaptive
+
+### Fast Fourier Transform
+- FFT1
+- FFT2
 ---
 
 ## 🚧 TODO
