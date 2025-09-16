@@ -68,6 +68,8 @@ Numrs
 ### Fast Fourier Transform
 - FFT1
 - FFT2
+- Real_FT
+- Sin_FT
 ---
 
 ## 🚧 TODO
@@ -78,8 +80,9 @@ Numrs
 - [ ] Link library routines internally to reduce redundancy  
 - [ ] Expand documentation on method usage  
 - [ ] Hypergeometric and Hypergeometric derivatives  
-- [ ] Random numbers (especially Monte Carlo Methods)
+- [x] Random numbers (especially Monte Carlo Methods)
 - [ ] Root finding and nonlinear sets of equations
+- [ ] FFT implementations
 ---
 
 ## 📖 Documentation
