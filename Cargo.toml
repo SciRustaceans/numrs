@@ -18,5 +18,9 @@ lazy_static = "1.4"
 rand = "0.8"
 rand_pcg = "0.3"
 std-simd = "0.1"
+memmap2 = "0.5"
+tempfile = "3.3"
+uuid = { version = "1.0", features = ["v4"] }
+
 [dev-dependencies]
 criterion = "0.5"
