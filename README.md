@@ -70,7 +70,12 @@ Numrs
 - FFT2
 - Real_FT
 - Sin_FT
----
+- Fourn
+- Real_FT3
+
+### Fourier and Spectral Analysis
+- Convolve
+- Correlation
 
 ## 🚧 TODO
 
@@ -82,7 +87,9 @@ Numrs
 - [ ] Hypergeometric and Hypergeometric derivatives  
 - [x] Random numbers (especially Monte Carlo Methods)
 - [ ] Root finding and nonlinear sets of equations
-- [ ] FFT implementations
+- [x] FFT implementations
+- [ ] Manage lib dependencies
+- [ ] Fourier and Spectral Analysis (Lots of calls from FFT section of lib)
 ---
 
 ## 📖 Documentation
