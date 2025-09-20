@@ -1,17 +1,4 @@
     Checking num_rs v0.1.0 (/home/archdabe/Documents/Numerical-recipies/Rust/numrs)
-error[E0753]: expected outer doc comment
- --> src/utils.rs:5:1
-  |
-5 | //! Utility functions and common routines for numerical computations
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: inner doc comments like this (starting with `//!` or `/*!`) can only appear before items
-help: you might have meant to write a regular comment
-  |
-5 - //! Utility functions and common routines for numerical computations
-5 + // Utility functions and common routines for numerical computations
-  |
-
 error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
  --> src/bcucof.rs:1:15
   |
@@ -2416,7 +2403,7 @@ error[E0425]: cannot find function `complex_divide_simd` in this scope
 164 |                 complex_divide_simd(data_vec, respns_vec)
     |                 ^^^^^^^^^^^^^^^^^^^ not found in this scope
 
-Some errors have detailed explanations: E0405, E0412, E0425, E0432, E0433, E0603, E0658, E0753.
+Some errors have detailed explanations: E0405, E0412, E0425, E0432, E0433, E0603, E0658.
 For more information about an error, try `rustc --explain E0405`.
 warning: `num_rs` (lib) generated 87 warnings
-error: could not compile `num_rs` (lib) due to 132 previous errors; 87 warnings emitted
+error: could not compile `num_rs` (lib) due to 131 previous errors; 87 warnings emitted

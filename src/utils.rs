@@ -2,7 +2,7 @@ use ndarray::{Array1, Array2};
 use crate::constants;
 use crate::NumrsError;
 
-//! Utility functions and common routines for numerical computations
+// Utility functions and common routines for numerical computations
 
 /// Computes `sqrt(a^2 + b^2)` without destructive underflow or overflow.
 pub fn pythag(a: f64, b: f64) -> f64 {
