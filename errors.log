@@ -1,0 +1,2422 @@
+    Checking num_rs v0.1.0 (/home/archdabe/Documents/Numerical-recipies/Rust/numrs)
+error[E0753]: expected outer doc comment
+ --> src/utils.rs:5:1
+  |
+5 | //! Utility functions and common routines for numerical computations
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: inner doc comments like this (starting with `//!` or `/*!`) can only appear before items
+help: you might have meant to write a regular comment
+  |
+5 - //! Utility functions and common routines for numerical computations
+5 + // Utility functions and common routines for numerical computations
+  |
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
+ --> src/bcucof.rs:1:15
+  |
+1 | use ndarray::{Array2, Array1};
+  |               ^^^^^^  ^^^^^^ no `Array1` in the root
+  |               |
+  |               no `Array2` in the root
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
+ --> src/bcuint.rs:1:15
+  |
+1 | use ndarray::{Array2, Array1};
+  |               ^^^^^^  ^^^^^^ no `Array1` in the root
+  |               |
+  |               no `Array2` in the root
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/bico.rs:1:24
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
+ --> src/Carlson_elliptic_integral_first.rs:3:5
+  |
+3 | use std::f64::consts::FRAC_1_3;
+  |     ^^^^^^^^^^^^^^^^^^--------
+  |     |                 |
+  |     |                 help: a similar name exists in the module: `FRAC_PI_3`
+  |     no `FRAC_1_3` in `f64::consts`
+
+error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
+ --> src/Carlson_elliptic_integral_second.rs:3:5
+  |
+3 | use std::f64::consts::FRAC_1_3;
+  |     ^^^^^^^^^^^^^^^^^^--------
+  |     |                 |
+  |     |                 help: a similar name exists in the module: `FRAC_PI_3`
+  |     no `FRAC_1_3` in `f64::consts`
+
+error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
+ --> src/Carlson_elliptical_integral_degenerate.rs:3:5
+  |
+3 | use std::f64::consts::FRAC_1_3;
+  |     ^^^^^^^^^^^^^^^^^^--------
+  |     |                 |
+  |     |                 help: a similar name exists in the module: `FRAC_PI_3`
+  |     no `FRAC_1_3` in `f64::consts`
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/chebpc.rs:1:24
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`
+ --> src/chebyshev_approx.rs:4:15
+  |
+4 | use ndarray::{Array1, ArrayView1};
+  |               ^^^^^^  ^^^^^^^^^^
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               |       help: a similar name exists in the module: `ArrayView`
+  |               no `Array1` in the root
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/chebyshev_calc.rs:4:15
+  |
+4 | use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               no `Array1` in the root
+  |
+help: a similar name exists in the module
+  |
+4 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+4 + use ndarray::{Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+4 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+4 + use ndarray::{Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/Convolve.rs:3:15
+  |
+3 | use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               no `Array1` in the root
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+3 + use ndarray::{Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+3 + use ndarray::{Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/Correlation.rs:3:15
+  |
+3 | use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               no `Array1` in the root
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+3 + use ndarray::{Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+3 + use ndarray::{Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved import `std::f64::consts::EULER`
+ --> src/Cosine_Sine_Integrals.rs:3:28
+  |
+3 | use std::f64::consts::{PI, EULER};
+  |                            ^^^^^ no `EULER` in `f64::consts`
+
+error[E0432]: unresolved import `std::f64::consts::EULER`
+ --> src/ei.rs:1:5
+  |
+1 | use std::f64::consts::EULER;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ no `EULER` in `f64::consts`
+
+error[E0432]: unresolved import `std::f64::consts::EPSILON`
+ --> src/elementary_integration_methods.rs:1:5
+  |
+1 | use std::f64::consts::EPSILON;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ no `EPSILON` in `f64::consts`
+
+error[E0432]: unresolved import `std::f64::consts::EULER`
+ --> src/exponential_integral.rs:1:5
+  |
+1 | use std::f64::consts::EULER;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^ no `EULER` in `f64::consts`
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/factrl.rs:1:24
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/FFT_2.rs:2:30
+  |
+2 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                              ^^^^^^^^^
+  |                              |
+  |                              no `SimdFloat` in `simd`
+  |                              help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/gammln.rs:1:24
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved import `std::f64::consts::EPSILON`
+ --> src/linbcg.rs:1:5
+  |
+1 | use std::f64::consts::EPSILON;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^ no `EPSILON` in `f64::consts`
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
+ --> src/orthog.rs:1:15
+  |
+1 | use ndarray::{Array2, Array1};
+  |               ^^^^^^  ^^^^^^ no `Array1` in the root
+  |               |
+  |               no `Array2` in the root
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/pade.rs:2:24
+  |
+2 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`, `ndarray::ArrayView2`, `ndarray::ArrayView1`
+ --> src/pade.rs:3:15
+  |
+3 | use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+  |               ^^^^^^  ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^ no `ArrayView1` in the root
+  |               |       |       |
+  |               |       |       no `ArrayView2` in the root
+  |               |       no `Array1` in the root
+  |               no `Array2` in the root
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+3 + use ndarray::{Array2, Array1, ArrayView, ArrayView1};
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+3 + use ndarray::{Array2, Array1, ArrayView2, ArrayView};
+  |
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/pccheb.rs:1:24
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`
+ --> src/polcof.rs:3:15
+  |
+3 | use ndarray::{Array1, ArrayView1};
+  |               ^^^^^^  ^^^^^^^^^^
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               |       help: a similar name exists in the module: `ArrayView`
+  |               no `Array1` in the root
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/polydiv.rs:4:15
+  |
+4 | use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               no `Array1` in the root
+  |
+help: a similar name exists in the module
+  |
+4 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+4 + use ndarray::{Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+4 - use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+4 + use ndarray::{Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved import `std::f64::consts::EPSILON`
+ --> src/qrdcmp.rs:3:5
+  |
+3 | use std::f64::consts::EPSILON as F64_EPSILON;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `EPSILON` in `f64::consts`
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/ratlsq.rs:2:24
+  |
+2 | use std::simd::{f64x4, SimdFloat};
+  |                        ^^^^^^^^^
+  |                        |
+  |                        no `SimdFloat` in `simd`
+  |                        help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`, `ndarray::ArrayView2`, `ndarray::ArrayView1`
+ --> src/ratlsq.rs:3:15
+  |
+3 | use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+  |               ^^^^^^  ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^ no `ArrayView1` in the root
+  |               |       |       |
+  |               |       |       no `ArrayView2` in the root
+  |               |       no `Array1` in the root
+  |               no `Array2` in the root
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+3 + use ndarray::{Array2, Array1, ArrayView, ArrayView1};
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
+3 + use ndarray::{Array2, Array1, ArrayView2, ArrayView};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::ArrayView1`
+ --> src/ratval.rs:4:15
+  |
+4 | use ndarray::{Array1, ArrayView1};
+  |               ^^^^^^  ^^^^^^^^^^
+  |               |       |
+  |               |       no `ArrayView1` in the root
+  |               |       help: a similar name exists in the module: `ArrayView`
+  |               no `Array1` in the root
+
+error[E0432]: unresolved import `std::simd::SimdFloat`
+ --> src/Real_FT.rs:3:30
+  |
+3 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                              ^^^^^^^^^
+  |                              |
+  |                              no `SimdFloat` in `simd`
+  |                              help: a similar name exists in the module: `StdFloat`
+  |
+  = help: consider importing this trait instead:
+          std::simd::prelude::SimdFloat
+
+error[E0432]: unresolved imports `ndarray::Array3`, `ndarray::Array2`, `ndarray::ArrayViewMut3`, `ndarray::ArrayViewMut2`
+ --> src/Real_FT3.rs:3:15
+  |
+3 | use ndarray::{Array3, Array2, ArrayViewMut3, ArrayViewMut2};
+  |               ^^^^^^  ^^^^^^  ^^^^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut2` in the root
+  |               |       |       |
+  |               |       |       no `ArrayViewMut3` in the root
+  |               |       no `Array2` in the root
+  |               no `Array3` in the root
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array3, Array2, ArrayViewMut3, ArrayViewMut2};
+3 + use ndarray::{Array3, Array2, ArrayViewMut, ArrayViewMut2};
+  |
+help: a similar name exists in the module
+  |
+3 - use ndarray::{Array3, Array2, ArrayViewMut3, ArrayViewMut2};
+3 + use ndarray::{Array3, Array2, ArrayViewMut3, ArrayViewMut};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::Array2`
+ --> src/Recursive_Stratified_Sampling.rs:4:15
+  |
+4 | use ndarray::{Array1, Array2};
+  |               ^^^^^^  ^^^^^^ no `Array2` in the root
+  |               |
+  |               no `Array1` in the root
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/splie2.rs:1:15
+  |
+1 | use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |       |
+  |               |       |       no `ArrayView1` in the root
+  |               |       no `Array1` in the root
+  |               no `Array2` in the root
+  |
+help: a similar name exists in the module
+  |
+1 - use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+1 + use ndarray::{Array2, Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+1 - use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+1 + use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`, `ndarray::ArrayView1`, `ndarray::ArrayViewMut1`
+ --> src/splin2.rs:1:15
+  |
+1 | use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+  |               ^^^^^^  ^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^^ no `ArrayViewMut1` in the root
+  |               |       |       |
+  |               |       |       no `ArrayView1` in the root
+  |               |       no `Array1` in the root
+  |               no `Array2` in the root
+  |
+help: a similar name exists in the module
+  |
+1 - use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+1 + use ndarray::{Array2, Array1, ArrayView, ArrayViewMut1};
+  |
+help: a similar name exists in the module
+  |
+1 - use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut1};
+1 + use ndarray::{Array2, Array1, ArrayView1, ArrayViewMut};
+  |
+
+error[E0432]: unresolved imports `ndarray::Array1`, `ndarray::Array2`
+ --> src/utils.rs:1:15
+  |
+1 | use ndarray::{Array1, Array2};
+  |               ^^^^^^  ^^^^^^ no `Array2` in the root
+  |               |
+  |               no `Array1` in the root
+
+error[E0432]: unresolved imports `std::f64::abs`, `std::f64::acos`, `std::f64::asin`, `std::f64::atan`, `std::f64::atan2`, `std::f64::cbrt`, `std::f64::ceil`, `std::f64::cos`, `std::f64::cosh`, `std::f64::exp`, `std::f64::exp2`, `std::f64::exp_m1`, `std::f64::floor`, `std::f64::fract`, `std::f64::hypot`, `std::f64::ln`, `std::f64::ln_1p`, `std::f64::log`, `std::f64::log10`, `std::f64::log2`, `std::f64::max`, `std::f64::min`, `std::f64::powf`, `std::f64::powi`, `std::f64::round`, `std::f64::signum`, `std::f64::sin`, `std::f64::sinh`, `std::f64::sqrt`, `std::f64::tan`, `std::f64::tanh`, `std::f64::trunc`
+   --> src/lib.rs:192:24
+    |
+192 |     pub use std::f64::{abs, acos, asin, atan, atan2, cbrt, ceil, cos, cosh, exp, exp2, exp_m1, floor, 
+    |                        ^^^  ^^^^  ^^^^  ^^^^  ^^^^^  ^^^^  ^^^^  ^^^  ^^^^  ^^^  ^^^^  ^^^^^^  ^^^^^
+    |                        |    |     |     |     |      |     |     |    |     |
+    |                        |    |     |     |     |      |     |     |    |     no `exp` in `f64`
+    |                        |    |     |     |     |      |     |     |    no `cosh` in `f64`
+    |                        |    |     |     |     |      |     |     no `cos` in `f64`
+    |                        |    |     |     |     |      |     no `ceil` in `f64`
+    |                        |    |     |     |     |      no `cbrt` in `f64`
+    |                        |    |     |     |     no `atan2` in `f64`
+    |                        |    |     |     no `atan` in `f64`
+    |                        |    |     no `asin` in `f64`
+    |                        |    no `acos` in `f64`
+    |                        no `abs` in `f64`
+193 |                       fract, hypot, ln, ln_1p, log, log10, log2, max, min, powf, powi, round, 
+    |                       ^^^^^  ^^^^^  ^^  ^^^^^  ^^^  ^^^^^  ^^^^  ^^^  ^^^  ^^^^  ^^^^  ^^^^^
+194 |                       signum, sin, sinh, sqrt, tan, tanh, trunc};
+    |                       ^^^^^^  ^^^  ^^^^  ^^^^  ^^^  ^^^^  ^^^^^
+
+error[E0432]: unresolved import `crossbeam`
+   --> src/Fourn.rs:166:9
+    |
+166 |     use crossbeam::thread;
+    |         ^^^^^^^^^ use of unresolved module or unlinked crate `crossbeam`
+    |
+    = help: if you wanted to use a crate named `crossbeam`, use `cargo add crossbeam` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `special`
+ --> src/gaujac.rs:5:5
+  |
+5 | use special::Gamma;
+  |     ^^^^^^^ use of unresolved module or unlinked crate `special`
+  |
+  = help: if you wanted to use a crate named `special`, use `cargo add special` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `special`
+ --> src/gaulag.rs:5:5
+  |
+5 | use special::Gamma;
+  |     ^^^^^^^ use of unresolved module or unlinked crate `special`
+  |
+  = help: if you wanted to use a crate named `special`, use `cargo add special` to add it to your `Cargo.toml`
+
+error[E0432]: unresolved import `sprs`
+ --> src/sprspm.rs:1:5
+  |
+1 | use sprs::{CsMat, CsVec};
+  |     ^^^^ use of unresolved module or unlinked crate `sprs`
+  |
+  = help: if you wanted to use a crate named `sprs`, use `cargo add sprs` to add it to your `Cargo.toml`
+
+error: cannot find macro `s` in this scope
+  --> src/Correlation.rs:41:26
+   |
+41 |     fft_result.slice_mut(s![..n]).assign(&Array1::from_vec(data.to_vec()));
+   |                          ^
+   |
+help: consider importing this macro
+   |
+1  + use ndarray::s;
+   |
+
+error: cannot find macro `s` in this scope
+  --> src/Convolve.rs:86:22
+   |
+86 |     output.slice_mut(s![..n]).assign(&Array1::from_vec(input.to_vec()));
+   |                      ^
+   |
+help: consider importing this macro
+   |
+1  + use ndarray::s;
+   |
+
+error: cannot find macro `s` in this scope
+  --> src/Convolve.rs:40:22
+   |
+40 |     Ok(ans_fft.slice(s![..n]).to_owned())
+   |                      ^
+   |
+help: consider importing this macro
+   |
+1  + use ndarray::s;
+   |
+
+error[E0425]: cannot find value `jp_plus` in this scope
+   --> src/airy.rs:202:19
+    |
+202 |         let yp = (jp_plus * (xnu * PI).cos() - jp_minus) / (xnu * PI).sin();
+    |                   ^^^^^^^ help: a local variable with a similar name exists: `j_plus`
+
+error[E0425]: cannot find value `jp_minus` in this scope
+   --> src/airy.rs:202:48
+    |
+202 |         let yp = (jp_plus * (xnu * PI).cos() - jp_minus) / (xnu * PI).sin();
+    |                                                ^^^^^^^^ help: a local variable with a similar name exists: `j_minus`
+
+error[E0433]: failed to resolve: use of undeclared type `Arc`
+   --> src/beschd.rs:170:19
+    |
+170 |     let results = Arc::new(Mutex::new(Vec::with_capacity(x_values.len())));
+    |                   ^^^ use of undeclared type `Arc`
+    |
+help: consider importing this struct
+    |
+1   + use std::sync::Arc;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `Mutex`
+   --> src/beschd.rs:170:28
+    |
+170 |     let results = Arc::new(Mutex::new(Vec::with_capacity(x_values.len())));
+    |                            ^^^^^ use of undeclared type `Mutex`
+    |
+help: consider importing this struct
+    |
+1   + use std::sync::Mutex;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `Arc`
+   --> src/beschd.rs:175:27
+    |
+175 |         let results_ref = Arc::clone(&results);
+    |                           ^^^ use of undeclared type `Arc`
+    |
+help: consider importing this struct
+    |
+1   + use std::sync::Arc;
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `thread`
+   --> src/beschd.rs:177:22
+    |
+177 |         handles.push(thread::spawn(move || {
+    |                      ^^^^^^ use of unresolved module or unlinked crate `thread`
+    |
+    = help: if you wanted to use a crate named `thread`, use `cargo add thread` to add it to your `Cargo.toml`
+help: consider importing this module
+    |
+1   + use std::thread;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `Arc`
+   --> src/beschd.rs:193:5
+    |
+193 |     Arc::try_unwrap(results)
+    |     ^^^ use of undeclared type `Arc`
+    |
+help: consider importing this struct
+    |
+1   + use std::sync::Arc;
+    |
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+ --> src/bessel_k0.rs:9:8
+  |
+9 |     T: BesselFloat,
+  |        ^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these traits
+  |
+1 + use crate::BesselFloat;
+  |
+1 + use crate::beschd::BesselFloat;
+  |
+1 + use crate::bessel_I1::BesselFloat;
+  |
+1 + use crate::bessel_i::BesselFloat;
+  |
+    and 3 other candidates
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:21:20
+    |
+21  |         let poly = polynomial_eval(
+    |                    ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:41:20
+    |
+41  |         let poly = polynomial_eval(
+    |                    ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+  --> src/bessel_k0.rs:61:8
+   |
+61 |     T: BesselFloat,
+   |        ^^^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these traits
+   |
+1  + use crate::BesselFloat;
+   |
+1  + use crate::beschd::BesselFloat;
+   |
+1  + use crate::bessel_I1::BesselFloat;
+   |
+1  + use crate::bessel_i::BesselFloat;
+   |
+     and 3 other candidates
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:67:9
+    |
+67  |         polynomial_eval(
+    |         ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:81:9
+    |
+81  |         polynomial_eval(
+    |         ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+   --> src/bessel_k0.rs:101:8
+    |
+101 |     T: BesselFloat,
+    |        ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing one of these traits
+    |
+1   + use crate::BesselFloat;
+    |
+1   + use crate::beschd::BesselFloat;
+    |
+1   + use crate::bessel_I1::BesselFloat;
+    |
+1   + use crate::bessel_i::BesselFloat;
+    |
+      and 3 other candidates
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:107:13
+    |
+107 |         x * polynomial_eval(
+    |             ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:121:22
+    |
+121 |         let result = polynomial_eval(
+    |                      ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+   --> src/bessel_k0.rs:147:8
+    |
+147 |     T: BesselFloat,
+    |        ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing one of these traits
+    |
+1   + use crate::BesselFloat;
+    |
+1   + use crate::beschd::BesselFloat;
+    |
+1   + use crate::bessel_I1::BesselFloat;
+    |
+1   + use crate::bessel_i::BesselFloat;
+    |
+      and 3 other candidates
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:157:20
+    |
+157 |         let poly = polynomial_eval(
+    |                    ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0425]: cannot find function `polynomial_eval` in this scope
+   --> src/bessel_k0.rs:174:20
+    |
+174 |         let poly = polynomial_eval(
+    |                    ^^^^^^^^^^^^^^^ not found in this scope
+    |
+note: these functions exist but are inaccessible
+    |
+   ::: src/bessel_I1.rs:238:1
+    |
+238 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+239 | | where
+240 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+246 | |     result
+247 | | }
+    | |_^ `crate::bessel_I1::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_j.rs:268:1
+    |
+268 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+269 | | where
+270 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+276 | |     result
+277 | | }
+    | |_^ `crate::bessel_j::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k1.rs:322:1
+    |
+322 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+323 | | where
+324 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+330 | |     result
+331 | | }
+    | |_^ `crate::bessel_k1::polynomial_eval`: not accessible
+   --> src/bessel_i.rs:359:1
+    |
+359 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+360 | | where
+361 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+367 | |     result
+368 | | }
+    | |_^ `crate::bessel_i::polynomial_eval`: not accessible
+    |
+   ::: src/bessel_k.rs:400:1
+    |
+400 | / fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
+401 | | where
+402 | |     T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+...   |
+408 | |     result
+409 | | }
+    | |_^ `crate::bessel_k::polynomial_eval`: not accessible
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+   --> src/bessel_k0.rs:194:8
+    |
+194 |     T: BesselFloat,
+    |        ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing one of these traits
+    |
+1   + use crate::BesselFloat;
+    |
+1   + use crate::beschd::BesselFloat;
+    |
+1   + use crate::bessel_I1::BesselFloat;
+    |
+1   + use crate::bessel_i::BesselFloat;
+    |
+      and 3 other candidates
+
+error[E0405]: cannot find trait `BesselFloat` in this scope
+   --> src/bessel_k0.rs:226:8
+    |
+226 |     T: BesselFloat + Send + Sync + 'static,
+    |        ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing one of these traits
+    |
+1   + use crate::BesselFloat;
+    |
+1   + use crate::beschd::BesselFloat;
+    |
+1   + use crate::bessel_I1::BesselFloat;
+    |
+1   + use crate::bessel_i::BesselFloat;
+    |
+      and 3 other candidates
+
+error[E0425]: cannot find function `chebev` in this scope
+   --> src/chebyshev_calc.rs:214:28
+    |
+214 |         let approx_deriv = chebev(a, b, &cder, x);
+    |                            ^^^^^^ not found in this scope
+    |
+help: consider importing one of these functions
+    |
+1   + use crate::beschd::chebev;
+    |
+1   + use crate::chebyshev_approx::chebev;
+    |
+
+error[E0425]: cannot find function `chebev` in this scope
+   --> src/chebyshev_calc.rs:228:31
+    |
+228 |         let approx_integral = chebev(a, b, &cint, x);
+    |                               ^^^^^^ not found in this scope
+    |
+help: consider importing one of these functions
+    |
+1   + use crate::beschd::chebev;
+    |
+1   + use crate::chebyshev_approx::chebev;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Convolve.rs:178:36
+    |
+178 | unsafe fn complex_multiply_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                    ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Convolve.rs:178:48
+    |
+178 | unsafe fn complex_multiply_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                                ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Convolve.rs:178:60
+    |
+178 | unsafe fn complex_multiply_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                                            ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Correlation.rs:117:46
+    |
+117 | unsafe fn complex_multiply_conjugate_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                              ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Correlation.rs:117:58
+    |
+117 | unsafe fn complex_multiply_conjugate_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                                          ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0412]: cannot find type `__m256d` in this scope
+   --> src/Correlation.rs:117:70
+    |
+117 | unsafe fn complex_multiply_conjugate_simd(a: __m256d, b: __m256d) -> __m256d {
+    |                                                                      ^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+1   + use std::arch::x86_64::__m256d;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `Ordering`
+   --> src/Cos_FT.rs:127:69
+    |
+127 |     let atomic_sum_bits = std::sync::atomic::AtomicU64::new(0).load(Ordering::Relaxed);
+    |                                                                     ^^^^^^^^ use of undeclared type `Ordering`
+    |
+help: consider importing one of these enums
+    |
+1   + use std::cmp::Ordering;
+    |
+1   + use std::sync::atomic::Ordering;
+    |
+
+error[E0433]: failed to resolve: use of undeclared type `Instant`
+   --> src/FFT_1.rs:331:17
+    |
+331 |     let start = Instant::now();
+    |                 ^^^^^^^ use of undeclared type `Instant`
+    |
+help: consider importing this struct
+    |
+1   + use std::time::Instant;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+  --> src/FFT_2.rs:14:5
+   |
+14 |     four1(fft1, n, 1);
+   |     ^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::FFT_1::four1;
+   |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/FFT_2.rs:159:5
+    |
+159 |     four1(fft1, n, 1);
+    |     ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/FFT_2.rs:288:5
+    |
+288 |     four1(fft1, n, 1);
+    |     ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0412]: cannot find type `F64` in this scope
+   --> src/frenel.rs:260:21
+    |
+260 |     pub errors: Vec<F64>,
+    |                     ^^^
+    |
+help: a builtin type with a similar name exists (notice the capitalization difference)
+    |
+260 -     pub errors: Vec<F64>,
+260 +     pub errors: Vec<f64>,
+    |
+help: you might be missing a type parameter
+    |
+258 | pub struct FresnelBenchmark<F64> {
+    |                            +++++
+
+error[E0425]: cannot find function `midsql_lower_singularity` in this scope
+   --> src/midsqu.rs:165:24
+    |
+148 | / pub fn midsqu_lower_singularity<F>(funk: F, a: f64, b: f64, n: usize) -> IntegrationResult<f64>
+149 | | where
+150 | |     F: Fn(f64) -> f64,
+...   |
+157 | |     midsqu(transformed_func, a, b, n)
+158 | | }
+    | |_- similarly named function `midsqu_lower_singularity` defined here
+...
+165 |       let lower_result = midsql_lower_singularity(&funk, a, b, n)?;
+    |                          ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+help: a function with a similar name exists
+    |
+165 -     let lower_result = midsql_lower_singularity(&funk, a, b, n)?;
+165 +     let lower_result = midsqu_lower_singularity(&funk, a, b, n)?;
+    |
+help: consider importing this function
+    |
+1   + use crate::midsql::midsql_lower_singularity;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+  --> src/Real_FT.rs:14:9
+   |
+14 |         four1(data, half_n, 1);
+   |         ^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::FFT_1::four1;
+   |
+
+error[E0425]: cannot find function `four1` in this scope
+  --> src/Real_FT.rs:20:9
+   |
+20 |         four1(data, half_n, -1);
+   |         ^^^^^ not found in this scope
+   |
+help: consider importing this function
+   |
+1  + use crate::FFT_1::four1;
+   |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/Real_FT.rs:238:9
+    |
+238 |         four1(data, half_n, 1);
+    |         ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/Real_FT.rs:244:9
+    |
+244 |         four1(data, half_n, -1);
+    |         ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/Real_FT.rs:392:9
+    |
+392 |         four1(data, half_n, 1);
+    |         ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0425]: cannot find function `four1` in this scope
+   --> src/Real_FT.rs:438:9
+    |
+438 |         four1(data, half_n, -1);
+    |         ^^^^^ not found in this scope
+    |
+help: consider importing this function
+    |
+1   + use crate::FFT_1::four1;
+    |
+
+error[E0603]: function `gamma` is private
+   --> src/airy.rs:257:20
+    |
+257 |         bessel_ik::gamma(x)
+    |                    ^^^^^ private function
+    |
+note: the function `gamma` is defined here
+   --> src/airy.rs:118:5
+    |
+118 |     fn gamma(x: f64) -> f64 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/airy.rs:560:7
+    |
+560 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `std::mem`
+ --> src/bandec.rs:1:5
+  |
+1 | use std::mem;
+  |     ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `approx::assert_abs_diff_eq`
+ --> src/bcucof.rs:3:5
+  |
+3 | use approx::assert_abs_diff_eq;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `approx::assert_abs_diff_eq`
+ --> src/bcuint.rs:3:5
+  |
+3 | use approx::assert_abs_diff_eq;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts`
+ --> src/bessel_I1.rs:1:5
+  |
+1 | use std::f64::consts;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessel_j1.rs:423:7
+    |
+423 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `PI`
+ --> src/bessel_j1.rs:1:24
+  |
+1 | use std::f64::consts::{PI, FRAC_PI_4};
+  |                        ^^
+
+warning: unnecessary parentheses around assigned value
+   --> src/bessel_jy.rs:172:14
+    |
+172 |         p /= (i_f64 - xmu);
+    |              ^           ^
+    |
+    = note: `#[warn(unused_parens)]` on by default
+help: remove these parentheses
+    |
+172 -         p /= (i_f64 - xmu);
+172 +         p /= i_f64 - xmu;
+    |
+
+warning: unnecessary parentheses around assigned value
+   --> src/bessel_jy.rs:173:14
+    |
+173 |         q /= (i_f64 + xmu);
+    |              ^           ^
+    |
+help: remove these parentheses
+    |
+173 -         q /= (i_f64 + xmu);
+173 +         q /= i_f64 + xmu;
+    |
+
+warning: unused import: `std::f64::consts`
+ --> src/bessel_k0.rs:1:5
+  |
+1 | use std::f64::consts;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts`
+ --> src/bessel_k1.rs:1:5
+  |
+1 | use std::f64::consts;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessel_y1.rs:550:7
+    |
+550 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `PI`
+ --> src/bessel_y1.rs:1:24
+  |
+1 | use std::f64::consts::{PI, FRAC_PI_4};
+  |                        ^^
+
+warning: unused import: `super::*`
+ --> src/bessel_y1.rs:9:9
+  |
+9 |     use super::*;
+  |         ^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessel_yn.rs:583:7
+    |
+583 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `super::*`
+ --> src/bessel_yn.rs:7:9
+  |
+7 |     use super::*;
+  |         ^^^^^^^^
+
+warning: unused import: `super::*`
+  --> src/bessel_yn.rs:67:9
+   |
+67 |     use super::*;
+   |         ^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessik.rs:471:7
+    |
+471 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `FRAC_PI_2`
+ --> src/bessik.rs:1:28
+  |
+1 | use std::f64::consts::{PI, FRAC_PI_2};
+  |                            ^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessj0.rs:390:7
+    |
+390 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/bessy0.rs:515:7
+    |
+515 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/beta.rs:184:7
+    |
+184 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `std::f32::consts::LN_2`
+ --> src/beta.rs:1:5
+  |
+1 | use std::f32::consts::LN_2;
+  |     ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> src/beta.rs:2:5
+  |
+2 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `f64x4`
+ --> src/bico.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+
+warning: unused import: `std::sync::OnceLock`
+ --> src/Carlson_elliptic_integral_second.rs:5:5
+  |
+5 | use std::sync::OnceLock;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts::PI`
+ --> src/Convolve.rs:1:5
+  |
+1 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::f64::consts::PI`
+ --> src/Correlation.rs:1:5
+  |
+1 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `SQRT_2`
+ --> src/dawson_integral.rs:3:28
+  |
+3 | use std::f64::consts::{PI, SQRT_2};
+  |                            ^^^^^^
+
+warning: unused import: `Arc`
+ --> src/ddpoly.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/ei.rs:315:7
+    |
+315 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/error_functions.rs:440:7
+    |
+440 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `SQRT_2`
+ --> src/error_functions.rs:1:28
+  |
+1 | use std::f32::consts::{PI, SQRT_2};
+  |                            ^^^^^^
+
+warning: unused doc comment
+  --> src/eulsum.rs:92:1
+   |
+92 | /// Thread-local Euler summation for better performance in single-threaded contexts
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rustdoc does not generate documentation for macro invocations
+   |
+   = help: to document an item produced by a macro, the macro must produce the documentation as part of its expansion
+   = note: `#[warn(unused_doc_comments)]` on by default
+
+warning: unused import: `Arc`
+ --> src/eulsum.rs:1:17
+  |
+1 | use std::sync::{Arc, Mutex, RwLock};
+  |                 ^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/exponential_integral.rs:313:7
+    |
+313 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `f64x4`
+ --> src/factrl.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+
+warning: unused import: `Simd`
+ --> src/FFT_1.rs:3:24
+  |
+3 | use std::simd::{f64x2, Simd};
+  |                        ^^^^
+
+warning: unexpected `cfg` condition value: `simd`
+   --> src/FFT_2.rs:104:15
+    |
+104 |         #[cfg(feature = "simd")]
+    |               ^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `simd` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition value: `simd`
+   --> src/FFT_2.rs:128:19
+    |
+128 |         #[cfg(not(feature = "simd"))]
+    |                   ^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `simd` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused imports: `Arc` and `Mutex`
+ --> src/Four_FS.rs:6:17
+  |
+6 | use std::sync::{Arc, Mutex};
+  |                 ^^^  ^^^^^
+
+warning: unused imports: `AtomicU64` and `Ordering`
+ --> src/Fourn.rs:3:25
+  |
+3 | use std::sync::atomic::{AtomicU64, Ordering};
+  |                         ^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `std::arch::x86_64::*`
+   --> src/Fourn.rs:126:9
+    |
+126 |     use std::arch::x86_64::*;
+    |         ^^^^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/gamma_continued_funciton.rs:335:7
+    |
+335 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `E`
+ --> src/gamma_continued_funciton.rs:1:24
+  |
+1 | use std::f32::consts::{E, PI};
+  |                        ^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/gamma_series.rs:329:7
+    |
+329 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused imports: `E` and `LN_2`
+ --> src/gamma_series.rs:1:24
+  |
+1 | use std::f32::consts::{E, LN_2, PI};
+  |                        ^  ^^^^
+
+warning: unused doc comment
+  --> src/gammln.rs:22:1
+   |
+22 | /// Thread-local cache for frequently computed values
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ rustdoc does not generate documentation for macro invocations
+   |
+   = help: to document an item produced by a macro, the macro must produce the documentation as part of its expansion
+
+warning: unused import: `f64x4`
+ --> src/gammln.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+
+warning: unused import: `once_cell::sync::Lazy`
+ --> src/gammln.rs:3:5
+  |
+3 | use once_cell::sync::Lazy;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::mem`
+ --> src/gaussjdcp.rs:1:5
+  |
+1 | use std::mem;
+  |     ^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/inc_beta_func.rs:398:7
+    |
+398 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `E`
+ --> src/inc_beta_func.rs:1:24
+  |
+1 | use std::f64::consts::{E, PI};
+  |                        ^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/incomplete_gamma.rs:326:7
+    |
+326 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `E`
+ --> src/incomplete_gamma.rs:1:24
+  |
+1 | use std::f32::consts::{E, PI};
+  |                        ^
+
+warning: unused import: `std::f64::consts::FRAC_1_PI`
+ --> src/Jacobian_elliptical.rs:2:5
+  |
+2 | use std::f64::consts::FRAC_1_PI;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `once_cell::sync::Lazy`
+ --> src/pade.rs:4:5
+  |
+4 | use once_cell::sync::Lazy;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+ --> src/pade.rs:5:17
+  |
+5 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `f64x4`
+ --> src/pccheb.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+
+warning: unused import: `std::ptr`
+ --> src/pccheb.rs:2:5
+  |
+2 | use std::ptr;
+  |     ^^^^^^^^
+
+warning: unused import: `Arc`
+ --> src/polydiv.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `rayon::prelude::*`
+ --> src/quad3d.rs:1:5
+  |
+1 | use rayon::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Mutex`
+ --> src/quad3d.rs:2:22
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                      ^^^^^
+
+warning: unused import: `std::f64::consts::PI`
+ --> src/quad3d.rs:3:5
+  |
+3 | use std::f64::consts::PI;
+  |     ^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+ --> src/random_0.rs:3:17
+  |
+3 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unexpected `cfg` condition value: `std`
+   --> src/random_0.rs:141:11
+    |
+141 |     #[cfg(feature = "std")]
+    |           ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `Arc`
+ --> src/random_1.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `lazy_static::lazy_static`
+ --> src/random_1.rs:3:5
+  |
+3 | use lazy_static::lazy_static;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `std`
+   --> src/random_1.rs:213:11
+    |
+213 |     #[cfg(feature = "std")]
+    |           ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `Arc`
+ --> src/random_2.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `lazy_static::lazy_static`
+ --> src/random_2.rs:3:5
+  |
+3 | use lazy_static::lazy_static;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `std`
+   --> src/random_2.rs:281:11
+    |
+281 |     #[cfg(feature = "std")]
+    |           ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `Arc`
+ --> src/random_3.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `lazy_static::lazy_static`
+ --> src/random_3.rs:3:5
+  |
+3 | use lazy_static::lazy_static;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `std`
+   --> src/random_3.rs:260:11
+    |
+260 |     #[cfg(feature = "std")]
+    |           ^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `std` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `f64x4`
+ --> src/ratlsq.rs:2:17
+  |
+2 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+
+warning: unused import: `once_cell::sync::Lazy`
+ --> src/ratlsq.rs:4:5
+  |
+4 | use once_cell::sync::Lazy;
+  |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Arc`
+ --> src/ratlsq.rs:5:17
+  |
+5 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `Simd`
+ --> src/Real_FT.rs:3:24
+  |
+3 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                        ^^^^
+
+warning: unused import: `Arc`
+ --> src/Recursive_Stratified_Sampling.rs:2:17
+  |
+2 | use std::sync::{Arc, Mutex};
+  |                 ^^^
+
+warning: unused import: `std::f64::consts`
+ --> src/Recursive_Stratified_Sampling.rs:7:5
+  |
+7 | use std::f64::consts;
+  |     ^^^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `bench`
+   --> src/spherical_bessel.rs:511:7
+    |
+511 | #[cfg(feature = "bench")]
+    |       ^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `async` and `tokio`
+    = help: consider adding `bench` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unused import: `SQRT_2`
+ --> src/spherical_bessel.rs:1:39
+  |
+1 | use std::f64::consts::{PI, FRAC_PI_2, SQRT_2};
+  |                                       ^^^^^^
+
+warning: unused import: `approx::assert_abs_diff_eq`
+ --> src/splie2.rs:3:5
+  |
+3 | use approx::assert_abs_diff_eq;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `approx::assert_abs_diff_eq`
+ --> src/splin2.rs:3:5
+  |
+3 | use approx::assert_abs_diff_eq;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: ambiguous glob re-exports
+   --> src/lib.rs:118:9
+    |
+118 | pub use beta::*;
+    |         ^^^^^^^ the name `ln_gamma` in the value namespace is first re-exported here
+119 | pub use gamma_series::*;
+    |         --------------- but the name `ln_gamma` in the value namespace is also re-exported here
+    |
+    = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: unused import: `std::f64::consts::*`
+   --> src/lib.rs:191:13
+    |
+191 |     pub use std::f64::consts::*;
+    |             ^^^^^^^^^^^^^^^^^^^
+
+error: invalid suffix `i64` for float literal
+   --> src/spherical_bessel.rs:190:24
+    |
+190 |     let h1 = sj + sy * 1.0i64; // Using complex numbers
+    |                        ^^^^^^ invalid suffix `i64`
+    |
+    = help: valid suffixes are `f32` and `f64`
+
+error: invalid suffix `i64` for float literal
+   --> src/spherical_bessel.rs:191:27
+    |
+191 |     let h1p = sjp + syp * 1.0i64;
+    |                           ^^^^^^ invalid suffix `i64`
+    |
+    = help: valid suffixes are `f32` and `f64`
+
+error: invalid suffix `i64` for float literal
+   --> src/spherical_bessel.rs:197:24
+    |
+197 |     let h2 = sj - sy * 1.0i64;
+    |                        ^^^^^^ invalid suffix `i64`
+    |
+    = help: valid suffixes are `f32` and `f64`
+
+error: invalid suffix `i64` for float literal
+   --> src/spherical_bessel.rs:198:27
+    |
+198 |     let h2p = sjp - syp * 1.0i64;
+    |                           ^^^^^^ invalid suffix `i64`
+    |
+    = help: valid suffixes are `f32` and `f64`
+
+error[E0658]: use of unstable library feature `more_float_constants`
+ --> src/airy.rs:1:39
+  |
+1 | use std::f64::consts::{PI, FRAC_1_PI, FRAC_1_SQRT_3};
+  |                                       ^^^^^^^^^^^^^
+  |
+  = note: see issue #103883 <https://github.com/rust-lang/rust/issues/103883> for more information
+
+error[E0658]: use of unstable library feature `more_float_constants`
+ --> src/airy.rs:7:21
+  |
+7 | const ONOVRT: f64 = FRAC_1_SQRT_3; // 1/√3 ≈ 0.577350269
+  |                     ^^^^^^^^^^^^^
+  |
+  = note: see issue #103883 <https://github.com/rust-lang/rust/issues/103883> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/bico.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/chebpc.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+  --> src/chebpc.rs:41:29
+   |
+41 |                 let d_vec = f64x4::from_slice(std::slice::from_raw_parts(d_ptr, 4));
+   |                             ^^^^^
+   |
+   = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+  --> src/chebpc.rs:42:30
+   |
+42 |                 let dd_vec = f64x4::from_slice(std::slice::from_raw_parts(dd_ptr, 4));
+   |                              ^^^^^
+   |
+   = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+  --> src/chebpc.rs:43:34
+   |
+43 |                 let d_prev_vec = f64x4::from_slice(std::slice::from_raw_parts(d_prev_ptr, 4));
+   |                                  ^^^^^
+   |
+   = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+  --> src/chebpc.rs:46:43
+   |
+46 |                 let result = d_prev_vec * f64x4::splat(2.0) - dd_vec;
+   |                                           ^^^^^
+   |
+   = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/chebpc.rs:117:25
+    |
+117 |             let d_vec = f64x4::from_slice(std::slice::from_raw_parts(d_ptr, 4));
+    |                         ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/chebpc.rs:118:26
+    |
+118 |             let dd_vec = f64x4::from_slice(std::slice::from_raw_parts(dd_ptr, 4));
+    |                          ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/chebpc.rs:119:30
+    |
+119 |             let d_prev_vec = f64x4::from_slice(std::slice::from_raw_parts(d_prev_ptr, 4));
+    |                              ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/chebpc.rs:121:39
+    |
+121 |             let result = d_prev_vec * f64x4::splat(2.0) - dd_vec;
+    |                                       ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/factrl.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/FFT_1.rs:3:17
+  |
+3 | use std::simd::{f64x2, Simd};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/FFT_1.rs:3:24
+  |
+3 | use std::simd::{f64x2, Simd};
+  |                        ^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_1.rs:164:26
+    |
+164 |             let data_i = f64x2::from_slice(&data[i..i+2]);
+    |                          ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_1.rs:165:26
+    |
+165 |             let data_j = f64x2::from_slice(&data[i+mmax..i+mmax+2]);
+    |                          ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/FFT_2.rs:2:17
+  |
+2 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/FFT_2.rs:2:24
+  |
+2 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                        ^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:171:25
+    |
+171 |         let data1_vec = f64x2::from_slice(&data1[idx..idx+2]);
+    |                         ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:172:25
+    |
+172 |         let data2_vec = f64x2::from_slice(&data2[idx..idx+2]);
+    |                         ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:175:27
+    |
+175 |         let interleaved = Simd::swizzle_dyn(
+    |                           ^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:176:13
+    |
+176 |             Simd::concat(data1_vec, data2_vec),
+    |             ^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:212:23
+    |
+212 |         let current = f64x2::from_slice(&fft1[j..j+2]);
+    |                       ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:213:24
+    |
+213 |         let reversed = f64x2::from_slice(&fft1[j_rev..j_rev+2]);
+    |                        ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:218:20
+    |
+218 |         let half = f64x2::splat(0.5);
+    |                    ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:219:30
+    |
+219 |         let rep_aim = half * f64x2::from_array([sum[0], diff[1]]);
+    |                              ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/FFT_2.rs:220:30
+    |
+220 |         let aip_rem = half * f64x2::from_array([sum[1], -diff[0]]);
+    |                              ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/gammln.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/pade.rs:2:17
+  |
+2 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/pade.rs:302:24
+    |
+302 |             let diff = f64x4::from_slice(&ws.z[j..j+4]) - f64x4::from_slice(&ws.x[j..j+4]);
+    |                        ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/pade.rs:302:59
+    |
+302 |             let diff = f64x4::from_slice(&ws.z[j..j+4]) - f64x4::from_slice(&ws.x[j..j+4]);
+    |                                                           ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/pccheb.rs:1:17
+  |
+1 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/ratlsq.rs:2:17
+  |
+2 | use std::simd::{f64x4, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/Real_FT.rs:3:17
+  |
+3 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                 ^^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+ --> src/Real_FT.rs:3:24
+  |
+3 | use std::simd::{f64x2, Simd, SimdFloat};
+  |                        ^^^^
+  |
+  = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/Real_FT.rs:269:21
+    |
+269 |         let data1 = f64x2::from_slice(&data[i1..i1+2]);
+    |                     ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/Real_FT.rs:270:21
+    |
+270 |         let data3 = f64x2::from_slice(&data[i3..i3+2]);
+    |                     ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/Real_FT.rs:322:21
+    |
+322 |         let data1 = f64x2::from_slice(&data[i1..i1+2]);
+    |                     ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0658]: use of unstable library feature `portable_simd`
+   --> src/Real_FT.rs:323:21
+    |
+323 |         let data3 = f64x2::from_slice(&data[i3..i3+2]);
+    |                     ^^^^^
+    |
+    = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
+
+error[E0425]: cannot find function `complex_divide_simd` in this scope
+   --> src/Convolve.rs:164:17
+    |
+164 |                 complex_divide_simd(data_vec, respns_vec)
+    |                 ^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+Some errors have detailed explanations: E0405, E0412, E0425, E0432, E0433, E0603, E0658, E0753.
+For more information about an error, try `rustc --explain E0405`.
+warning: `num_rs` (lib) generated 87 warnings
+error: could not compile `num_rs` (lib) due to 132 previous errors; 87 warnings emitted

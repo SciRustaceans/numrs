@@ -28,7 +28,7 @@ where
     let mut bi = T::one();
     
     // Determine starting point for downward recurrence
-    let m = 2 * (n + (ACC * n) as f64.sqrt() as i32);
+    let m = 2 * (n + ((ACC * n) as f64).sqrt() as i32);
     
     for j in (1..=m).rev() {
         let bim = bip + T::from_i32(j).unwrap() * tox * bi;
@@ -217,7 +217,7 @@ where
     
     // Use Miller's algorithm for the highest order needed
     let highest_n = n_end;
-    let m = 2 * (highest_n + (ACC * highest_n) as f64.sqrt() as i32);
+    let m = 2 * (highest_n + ((ACC * highest_n) as f64).sqrt() as i32);
     
     let mut bip = T::zero();
     let mut bi = T::one();
