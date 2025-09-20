@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array1};
+use ndarray::prelude::*;
 use rayon::prelude::*;
 use approx::assert_abs_diff_eq;
 

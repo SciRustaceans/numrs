@@ -1,50 +1,4 @@
     Checking num_rs v0.1.0 (/home/archdabe/Documents/Numerical-recipies/Rust/numrs)
-error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
- --> src/bcucof.rs:1:15
-  |
-1 | use ndarray::{Array2, Array1};
-  |               ^^^^^^  ^^^^^^ no `Array1` in the root
-  |               |
-  |               no `Array2` in the root
-
-error[E0432]: unresolved imports `ndarray::Array2`, `ndarray::Array1`
- --> src/bcuint.rs:1:15
-  |
-1 | use ndarray::{Array2, Array1};
-  |               ^^^^^^  ^^^^^^ no `Array1` in the root
-  |               |
-  |               no `Array2` in the root
-
-error[E0432]: unresolved import `std::simd::SimdFloat`
- --> src/bico.rs:1:24
-  |
-1 | use std::simd::{f64x4, SimdFloat};
-  |                        ^^^^^^^^^
-  |                        |
-  |                        no `SimdFloat` in `simd`
-  |                        help: a similar name exists in the module: `StdFloat`
-  |
-  = help: consider importing this trait instead:
-          std::simd::prelude::SimdFloat
-
-error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
- --> src/Carlson_elliptic_integral_first.rs:3:5
-  |
-3 | use std::f64::consts::FRAC_1_3;
-  |     ^^^^^^^^^^^^^^^^^^--------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `FRAC_PI_3`
-  |     no `FRAC_1_3` in `f64::consts`
-
-error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
- --> src/Carlson_elliptic_integral_second.rs:3:5
-  |
-3 | use std::f64::consts::FRAC_1_3;
-  |     ^^^^^^^^^^^^^^^^^^--------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `FRAC_PI_3`
-  |     no `FRAC_1_3` in `f64::consts`
-
 error[E0432]: unresolved import `std::f64::consts::FRAC_1_3`
  --> src/Carlson_elliptical_integral_degenerate.rs:3:5
   |
@@ -522,6 +476,30 @@ error[E0425]: cannot find value `jp_minus` in this scope
     |
 202 |         let yp = (jp_plus * (xnu * PI).cos() - jp_minus) / (xnu * PI).sin();
     |                                                ^^^^^^^^ help: a local variable with a similar name exists: `j_minus`
+
+error[E0412]: cannot find type `Array2` in this scope
+  --> src/bcucof.rs:30:6
+   |
+30 | ) -> Array2<f64> {
+   |      ^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `Array2` in this scope
+  --> src/bcucof.rs:81:10
+   |
+81 | ) -> Vec<Array2<f64>> {
+   |          ^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `Array2` in this scope
+  --> src/bcucof.rs:88:25
+   |
+88 | pub fn bicubic_eval(c: &Array2<f64>, u: f64, v: f64) -> f64 {
+   |                         ^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `Array2` in this scope
+   --> src/bcuint.rs:130:6
+    |
+130 | ) -> Array2<f64> {
+    |      ^^^^^^ not found in this scope
 
 error[E0433]: failed to resolve: use of undeclared type `Arc`
    --> src/beschd.rs:170:19
@@ -1429,11 +1407,23 @@ warning: unused import: `std::mem`
   |
   = note: `#[warn(unused_imports)]` on by default
 
+warning: unused import: `ndarray::prelude::*`
+ --> src/bcucof.rs:1:5
+  |
+1 | use ndarray::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^
+
 warning: unused import: `approx::assert_abs_diff_eq`
  --> src/bcucof.rs:3:5
   |
 3 | use approx::assert_abs_diff_eq;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ndarray::prelude::*`
+ --> src/bcuint.rs:1:5
+  |
+1 | use ndarray::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `approx::assert_abs_diff_eq`
  --> src/bcuint.rs:3:5
@@ -1602,16 +1592,16 @@ warning: unused import: `std::sync::Arc`
 2 | use std::sync::Arc;
   |     ^^^^^^^^^^^^^^
 
-warning: unused import: `f64x4`
- --> src/bico.rs:1:17
+warning: unused import: `std::simd::prelude::SimdFloat`
+ --> src/bico.rs:1:5
   |
-1 | use std::simd::{f64x4, SimdFloat};
-  |                 ^^^^^
+1 | use std::simd::prelude::SimdFloat;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `std::sync::OnceLock`
- --> src/Carlson_elliptic_integral_second.rs:5:5
+ --> src/Carlson_elliptic_integral_first.rs:4:5
   |
-5 | use std::sync::OnceLock;
+4 | use std::sync::OnceLock;
   |     ^^^^^^^^^^^^^^^^^^^
 
 warning: unused import: `std::f64::consts::PI`
@@ -2094,10 +2084,10 @@ error[E0658]: use of unstable library feature `more_float_constants`
   = note: see issue #103883 <https://github.com/rust-lang/rust/issues/103883> for more information
 
 error[E0658]: use of unstable library feature `portable_simd`
- --> src/bico.rs:1:17
+ --> src/bico.rs:1:5
   |
-1 | use std::simd::{f64x4, SimdFloat};
-  |                 ^^^^^
+1 | use std::simd::prelude::SimdFloat;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
 
@@ -2397,6 +2387,18 @@ error[E0658]: use of unstable library feature `portable_simd`
     |
     = note: see issue #86656 <https://github.com/rust-lang/rust/issues/86656> for more information
 
+error[E0433]: failed to resolve: use of undeclared type `Array2`
+  --> src/bcucof.rs:73:5
+   |
+73 |     Array2::from_shape_vec((4, 4), cl).unwrap()
+   |     ^^^^^^ use of undeclared type `Array2`
+
+error[E0433]: failed to resolve: use of undeclared type `Array2`
+   --> src/bcuint.rs:169:5
+    |
+169 |     Array2::from_shape_vec((4, 4), cl).unwrap()
+    |     ^^^^^^ use of undeclared type `Array2`
+
 error[E0425]: cannot find function `complex_divide_simd` in this scope
    --> src/Convolve.rs:164:17
     |
@@ -2405,5 +2407,5 @@ error[E0425]: cannot find function `complex_divide_simd` in this scope
 
 Some errors have detailed explanations: E0405, E0412, E0425, E0432, E0433, E0603, E0658.
 For more information about an error, try `rustc --explain E0405`.
-warning: `num_rs` (lib) generated 87 warnings
-error: could not compile `num_rs` (lib) due to 131 previous errors; 87 warnings emitted
+warning: `num_rs` (lib) generated 89 warnings
+error: could not compile `num_rs` (lib) due to 132 previous errors; 89 warnings emitted
