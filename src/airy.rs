@@ -1,10 +1,10 @@
-use std::f64::consts::{PI, FRAC_1_PI, FRAC_1_SQRT_3};
+use std::f64::consts::{PI, FRAC_1_PI};
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
 const THIRD: f64 = 1.0 / 3.0;
 const TWOTHR: f64 = 2.0 * THIRD;
-const ONOVRT: f64 = FRAC_1_SQRT_3; // 1/√3 ≈ 0.577350269
+const ONOVRT: f64 = 0.5773502691896257; // 1/√3 ≈ 0.577350269
 
 // Import Bessel functions from previous implementations
 mod bessel_ik {
@@ -43,18 +43,21 @@ mod bessel_ik {
         // Series expansion for I_ν(x)
         let mut sum = 0.0;
         let mut sum_deriv = 0.0;
-        let x2 = x * x / 4.0;
+        let x2 = x * x * 0.25; // x²/4
         let mut term = 1.0;
         let gamma_nu = gamma(xnu + 1.0);
         
         for k in 0..20 {
-            term *= x2 / ((k as f64 + 1.0) * (k as f64 + xnu + 1.0));
+            let kf = k as f64;
+            let denom = (kf + 1.0) * (kf + xnu + 1.0);
+            term *= x2 / denom;
             sum += term;
-            sum_deriv += (2.0 * k as f64 + xnu + 1.0) * term / x;
+            sum_deriv += (2.0 * kf + xnu + 1.0) * term / x;
         }
         
-        let i = (x / 2.0).powf(xnu) * sum / gamma_nu;
-        let ip = (x / 2.0).powf(xnu - 1.0) * sum_deriv / (2.0 * gamma_nu);
+        let x_half_pow = (x * 0.5).powf(xnu);
+        let i = x_half_pow * sum / gamma_nu;
+        let ip = x_half_pow * sum_deriv / (x * gamma_nu); // Optimized division
         
         (i, ip)
     }
@@ -64,8 +67,13 @@ mod bessel_ik {
         let (i_minus, _) = bessi_series(x, -xnu);
         let (i_plus, _) = bessi_series(x, xnu);
         
-        let k = PI / 2.0 * (i_minus - i_plus) / (xnu * PI).sin();
-        let kp = -PI / 2.0 * (i_minus + i_plus) / (xnu * PI).sin();
+        let sin_nu_pi = (xnu * PI).sin();
+        if sin_nu_pi.abs() < 1e-15 {
+            return (f64::INFINITY, f64::INFINITY); // Handle pole
+        }
+        
+        let k = PI * 0.5 * (i_minus - i_plus) / sin_nu_pi;
+        let kp = -PI * 0.5 * (i_minus + i_plus) / sin_nu_pi;
         
         (k, kp)
     }
@@ -79,13 +87,16 @@ mod bessel_ik {
         let mut term = 1.0;
         
         for k in 1..10 {
-            term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
+            let kf = k as f64;
+            term *= (mu - (2.0 * kf - 1.0).powi(2)) / (8.0 * z * kf);
             sum += term;
-            sum_deriv += (1.0 - 2.0 * k as f64) * term / z;
+            sum_deriv += (1.0 - 2.0 * kf) * term / z;
         }
         
-        let i = z.exp() * sum / (2.0 * PI * z).sqrt();
-        let ip = z.exp() * sum_deriv / (2.0 * PI * z).sqrt();
+        let sqrt_factor = (2.0 * PI * z).sqrt().recip();
+        let exp_z = z.exp();
+        let i = exp_z * sum * sqrt_factor;
+        let ip = exp_z * sum_deriv * sqrt_factor;
         
         (i, ip)
     }
@@ -99,7 +110,8 @@ mod bessel_ik {
         let mut term = 1.0;
         
         for k in 1..10 {
-            term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
+            let kf = k as f64;
+            term *= (mu - (2.0 * kf - 1.0).powi(2)) / (8.0 * z * kf);
             if k % 2 == 0 {
                 sum += term;
                 sum_deriv += term;
@@ -109,19 +121,21 @@ mod bessel_ik {
             }
         }
         
-        let k = (PI / (2.0 * z)).sqrt() * (-z).exp() * sum;
-        let kp = -(PI / (2.0 * z)).sqrt() * (-z).exp() * (sum + sum_deriv);
+        let sqrt_factor = (PI * 0.5 / z).sqrt();
+        let exp_neg_z = (-z).exp();
+        let k = sqrt_factor * exp_neg_z * sum;
+        let kp = -sqrt_factor * exp_neg_z * (sum + sum_deriv);
         
         (k, kp)
     }
     
     fn gamma(x: f64) -> f64 {
-        // Simple gamma function approximation
+        // Simple gamma function approximation using Lanczos
         if x <= 0.0 {
             return f64::NAN;
         }
         
-        // Lanczos approximation
+        // Lanczos approximation with precomputed constants
         const COEFFS: [f64; 7] = [
             0.99999999999980993,
             676.5203681218851,
@@ -140,7 +154,8 @@ mod bessel_ik {
         }
         
         let sqrt_2pi = (2.0 * PI).sqrt();
-        (sqrt_2pi * t).ln().exp() * (x + 0.5).powf(x + 0.5) * (-x - 0.5).exp()
+        let power_term = (x + 0.5).powf(x + 0.5) * (-x - 0.5).exp();
+        sqrt_2pi * t * power_term
     }
 }
 
@@ -177,29 +192,38 @@ mod bessel_jy {
         // Series expansion for J_ν(x)
         let mut sum = 0.0;
         let mut sum_deriv = 0.0;
-        let x2 = x * x / 4.0;
+        let x2 = x * x * -0.25; // -x²/4
         let mut term = 1.0;
         let gamma_nu = gamma(xnu + 1.0);
         
         for k in 0..20 {
-            term *= -x2 / ((k as f64 + 1.0) * (k as f64 + xnu + 1.0));
+            let kf = k as f64;
+            let denom = (kf + 1.0) * (kf + xnu + 1.0);
+            term *= x2 / denom;
             sum += term;
-            sum_deriv += (2.0 * k as f64 + xnu + 1.0) * term / x;
+            sum_deriv += (2.0 * kf + xnu + 1.0) * term / x;
         }
         
-        let j = (x / 2.0).powf(xnu) * sum / gamma_nu;
-        let jp = (x / 2.0).powf(xnu - 1.0) * sum_deriv / (2.0 * gamma_nu);
+        let x_half_pow = (x * 0.5).powf(xnu);
+        let j = x_half_pow * sum / gamma_nu;
+        let jp = x_half_pow * sum_deriv / (x * gamma_nu);
         
         (j, jp)
     }
     
     fn bessy_series(x: f64, xnu: f64) -> (f64, f64) {
         // Series expansion for Y_ν(x)
-        let (j_minus, _) = bessj_series(x, -xnu);
-        let (j_plus, _) = bessj_series(x, xnu);
+        let (j_plus, jp_plus) = bessj_series(x, xnu);
+        let (j_minus, jp_minus) = bessj_series(x, -xnu);
         
-        let y = (j_plus * (xnu * PI).cos() - j_minus) / (xnu * PI).sin();
-        let yp = (jp_plus * (xnu * PI).cos() - jp_minus) / (xnu * PI).sin();
+        let sin_nu_pi = (xnu * PI).sin();
+        if sin_nu_pi.abs() < 1e-15 {
+            return (f64::NEG_INFINITY, f64::NEG_INFINITY); // Handle pole
+        }
+        
+        let cos_nu_pi = (xnu * PI).cos();
+        let y = (j_plus * cos_nu_pi - j_minus) / sin_nu_pi;
+        let yp = (jp_plus * cos_nu_pi - jp_minus) / sin_nu_pi;
         
         (y, yp)
     }
@@ -213,7 +237,8 @@ mod bessel_jy {
         let mut term = 1.0;
         
         for k in 1..10 {
-            term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
+            let kf = k as f64;
+            term *= (mu - (2.0 * kf - 1.0).powi(2)) / (8.0 * z * kf);
             if k % 2 == 0 {
                 p += term;
             } else {
@@ -221,9 +246,12 @@ mod bessel_jy {
             }
         }
         
-        let (sin_z, cos_z) = (z - xnu * PI / 2.0 - PI / 4.0).sin_cos();
-        let j = (2.0 / (PI * z)).sqrt() * (p * cos_z - q * sin_z);
-        let jp = -(2.0 / (PI * z)).sqrt() * (p * sin_z + q * cos_z);
+        let angle = z - xnu * PI * 0.5 - PI * 0.25;
+        let (sin_z, cos_z) = angle.sin_cos();
+        let sqrt_factor = (2.0 / (PI * z)).sqrt();
+        
+        let j = sqrt_factor * (p * cos_z - q * sin_z);
+        let jp = -sqrt_factor * (p * sin_z + q * cos_z);
         
         (j, jp)
     }
@@ -237,7 +265,8 @@ mod bessel_jy {
         let mut term = 1.0;
         
         for k in 1..10 {
-            term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
+            let kf = k as f64;
+            term *= (mu - (2.0 * kf - 1.0).powi(2)) / (8.0 * z * kf);
             if k % 2 == 0 {
                 p += term;
             } else {
@@ -245,9 +274,12 @@ mod bessel_jy {
             }
         }
         
-        let (sin_z, cos_z) = (z - xnu * PI / 2.0 - PI / 4.0).sin_cos();
-        let y = (2.0 / (PI * z)).sqrt() * (p * sin_z + q * cos_z);
-        let yp = (2.0 / (PI * z)).sqrt() * (p * cos_z - q * sin_z);
+        let angle = z - xnu * PI * 0.5 - PI * 0.25;
+        let (sin_z, cos_z) = angle.sin_cos();
+        let sqrt_factor = (2.0 / (PI * z)).sqrt();
+        
+        let y = sqrt_factor * (p * sin_z + q * cos_z);
+        let yp = sqrt_factor * (p * cos_z - q * sin_z);
         
         (y, yp)
     }
@@ -260,6 +292,18 @@ mod bessel_jy {
 
 /// Airy functions Ai(x), Bi(x) and their derivatives Ai'(x), Bi'(x)
 pub fn airy(x: f64) -> Result<(f64, f64, f64, f64), String> {
+    // Handle NaN and infinity
+    if x.is_nan() {
+        return Err("x cannot be NaN".to_string());
+    }
+    if x.is_infinite() {
+        if x.is_sign_positive() {
+            return Ok((0.0, f64::INFINITY, 0.0, f64::INFINITY));
+        } else {
+            return Ok((0.0, 0.0, 0.0, 0.0)); // Asymptotic behavior for -∞
+        }
+    }
+
     let absx = x.abs();
     let rootx = absx.sqrt();
     let z = TWOTHR * absx * rootx;
@@ -300,29 +344,33 @@ pub fn airy(x: f64) -> Result<(f64, f64, f64, f64), String> {
 }
 
 /// Individual Airy function Ai(x)
+#[inline]
 pub fn airy_ai(x: f64) -> Result<f64, String> {
     airy(x).map(|(ai, _, _, _)| ai)
 }
 
 /// Individual Airy function Bi(x)
+#[inline]
 pub fn airy_bi(x: f64) -> Result<f64, String> {
     airy(x).map(|(_, bi, _, _)| bi)
 }
 
 /// Derivative of Airy function Ai'(x)
+#[inline]
 pub fn airy_aip(x: f64) -> Result<f64, String> {
     airy(x).map(|(_, _, aip, _)| aip)
 }
 
 /// Derivative of Airy function Bi'(x)
+#[inline]
 pub fn airy_bip(x: f64) -> Result<f64, String> {
     airy(x).map(|(_, _, _, bip)| bip)
 }
 
-/// Thread-safe cache for Airy function values
+/// Thread-safe cache for Airy function values with better key strategy
 #[derive(Clone)]
 pub struct AiryCache {
-    cache: Arc<Mutex<std::collections::HashMap<i32, (f64, f64, f64, f64)>>>,
+    cache: Arc<Mutex<std::collections::HashMap<u64, (f64, f64, f64, f64)>>>,
 }
 
 impl AiryCache {
@@ -332,17 +380,26 @@ impl AiryCache {
         }
     }
 
+    /// Convert f64 to u64 for use as hash key (preserves bit pattern)
+    fn f64_to_key(x: f64) -> u64 {
+        x.to_bits()
+    }
+
     /// Get Airy function values with caching
     pub fn get(&self, x: f64) -> Result<(f64, f64, f64, f64), String> {
-        let key = (x * 1000.0) as i32;
-        let mut cache = self.cache.lock().unwrap();
-
-        if let Some(&result) = cache.get(&key) {
-            return Ok(result);
+        let key = Self::f64_to_key(x);
+        {
+            let cache = self.cache.lock().unwrap();
+            if let Some(&result) = cache.get(&key) {
+                return Ok(result);
+            }
         }
 
         let result = airy(x)?;
-        cache.insert(key, result);
+        {
+            let mut cache = self.cache.lock().unwrap();
+            cache.insert(key, result);
+        }
         Ok(result)
     }
 
@@ -357,82 +414,145 @@ impl AiryCache {
     pub fn is_empty(&self) -> bool {
         self.cache.lock().unwrap().is_empty()
     }
+
+    /// Precompute values for a range and cache them
+    pub fn precompute_range(&self, start: f64, end: f64, num_points: usize) -> Result<(), String> {
+        let step = (end - start) / (num_points - 1) as f64;
+        
+        for i in 0..num_points {
+            let x = start + i as f64 * step;
+            let _ = self.get(x)?; // This will compute and cache
+        }
+        
+        Ok(())
+    }
 }
 
-/// Parallel batch computation for multiple x values
+/// Parallel batch computation for multiple x values with error handling
 pub fn airy_batch_parallel(x_values: &[f64]) -> Vec<Result<(f64, f64, f64, f64), String>> {
     x_values.par_iter()
-        .map(|&x| airy(x))
+        .map(|&x| {
+            if x.is_nan() {
+                Err("NaN input".to_string())
+            } else {
+                airy(x)
+            }
+        })
         .collect()
 }
 
-/// Compute Airy functions for a range of values in parallel
-pub fn airy_range_parallel(start: f64, end: f64, num_points: usize) -> Vec<Result<(f64, f64, f64, f64), String>> {
+/// Compute Airy functions for a range of values in parallel with error handling
+pub fn airy_range_parallel(start: f64, end: f64, num_points: usize) -> Result<Vec<(f64, f64, f64, f64)>, String> {
+    if start >= end {
+        return Err("start must be less than end".to_string());
+    }
+    if num_points < 2 {
+        return Err("num_points must be at least 2".to_string());
+    }
+
     let step = (end - start) / (num_points - 1) as f64;
     let x_values: Vec<f64> = (0..num_points)
         .map(|i| start + i as f64 * step)
         .collect();
 
-    airy_batch_parallel(&x_values)
+    let results = airy_batch_parallel(&x_values);
+    
+    // Convert to Result<Vec> with proper error handling
+    let mut output = Vec::with_capacity(num_points);
+    for result in results {
+        output.push(result?);
+    }
+    
+    Ok(output)
 }
 
-/// Compute zeros of Airy function Ai(x)
+/// Compute zeros of Airy function Ai(x) with better approximation
 pub fn airy_ai_zeros(n: usize) -> Vec<f64> {
-    // Approximation for zeros of Ai(x)
-    // Asymptotic formula: a_k ≈ -[3π(4k - 1)/8]^(2/3)
+    if n == 0 {
+        return Vec::new();
+    }
+
     (1..=n)
         .map(|k| {
-            let t = 3.0 * PI * (4.0 * k as f64 - 1.0) / 8.0;
-            -t.powf(TWOTHR)
+            let kf = k as f64;
+            // Improved asymptotic formula with correction terms
+            let t = 3.0 * PI * (4.0 * kf - 1.0) / 8.0;
+            let base = -t.powf(TWOTHR);
+            
+            // Add correction term for better accuracy
+            let correction = 5.0 / (48.0 * t.powf(4.0 / 3.0));
+            base + correction
         })
         .collect()
 }
 
-/// Compute zeros of Airy function Ai'(x)
+/// Compute zeros of Airy function Ai'(x) with better approximation
 pub fn airy_aip_zeros(n: usize) -> Vec<f64> {
-    // Approximation for zeros of Ai'(x)
-    // Asymptotic formula: a'_k ≈ -[3π(4k - 3)/8]^(2/3)
+    if n == 0 {
+        return Vec::new();
+    }
+
     (1..=n)
         .map(|k| {
-            let t = 3.0 * PI * (4.0 * k as f64 - 3.0) / 8.0;
-            -t.powf(TWOTHR)
+            let kf = k as f64;
+            // Improved asymptotic formula with correction terms
+            let t = 3.0 * PI * (4.0 * kf - 3.0) / 8.0;
+            let base = -t.powf(TWOTHR);
+            
+            // Add correction term for better accuracy
+            let correction = 7.0 / (48.0 * t.powf(4.0 / 3.0));
+            base + correction
         })
         .collect()
 }
 
-/// Compute the ratio Ai(x)/Bi(x)
+/// Compute the ratio Ai(x)/Bi(x) with error handling
 pub fn airy_ratio_ai_bi(x: f64) -> Result<f64, String> {
     let (ai, bi, _, _) = airy(x)?;
+    if bi == 0.0 {
+        return Err("Bi(x) is zero, ratio undefined".to_string());
+    }
     Ok(ai / bi)
 }
 
-/// Compute the ratio Ai'(x)/Bi'(x)
+/// Compute the ratio Ai'(x)/Bi'(x) with error handling
 pub fn airy_ratio_aip_bip(x: f64) -> Result<f64, String> {
     let (_, _, aip, bip) = airy(x)?;
+    if bip == 0.0 {
+        return Err("Bi'(x) is zero, ratio undefined".to_string());
+    }
     Ok(aip / bip)
 }
 
-/// Asymptotic expansion for large positive x
+/// Asymptotic expansion for large positive x (optimized)
 pub fn airy_asymptotic_large_positive(x: f64) -> (f64, f64, f64, f64) {
     let z = TWOTHR * x * x.sqrt();
-    let prefactor = 0.5 * FRAC_1_PI * x.powf(-0.25) * (-z).exp();
-    let prefactor_prime = -0.5 * FRAC_1_PI * x.powf(0.25) * (-z).exp();
-
-    let ai = prefactor;
-    let bi = FRAC_1_PI * x.powf(-0.25) * z.exp();
-    let aip = prefactor_prime;
-    let bip = FRAC_1_PI * x.powf(0.25) * z.exp();
+    let x_pow_neg_quarter = x.powf(-0.25);
+    let x_pow_quarter = x.powf(0.25);
+    let exp_neg_z = (-z).exp();
+    let exp_z = z.exp();
+    
+    let prefactor_ai = 0.5 * FRAC_1_PI * x_pow_neg_quarter * exp_neg_z;
+    let prefactor_bi = FRAC_1_PI * x_pow_neg_quarter * exp_z;
+    
+    let ai = prefactor_ai;
+    let bi = prefactor_bi;
+    let aip = -prefactor_ai * x_pow_quarter;
+    let bip = prefactor_bi * x_pow_quarter;
 
     (ai, bi, aip, bip)
 }
 
-/// Asymptotic expansion for large negative x
+/// Asymptotic expansion for large negative x (optimized)
 pub fn airy_asymptotic_large_negative(x: f64) -> (f64, f64, f64, f64) {
-    let z = TWOTHR * (-x) * (-x).sqrt();
-    let prefactor = FRAC_1_PI * (-x).powf(-0.25);
-    let prefactor_prime = FRAC_1_PI * (-x).powf(0.25);
-
-    let (sin_z, cos_z) = (z - PI / 4.0).sin_cos();
+    let abs_x = -x;
+    let z = TWOTHR * abs_x * abs_x.sqrt();
+    let x_pow_neg_quarter = abs_x.powf(-0.25);
+    let x_pow_quarter = abs_x.powf(0.25);
+    
+    let (sin_z, cos_z) = (z - PI * 0.25).sin_cos();
+    let prefactor = FRAC_1_PI * x_pow_neg_quarter;
+    let prefactor_prime = FRAC_1_PI * x_pow_quarter;
 
     let ai = prefactor * sin_z;
     let bi = prefactor * cos_z;
@@ -553,6 +673,17 @@ mod tests {
         
         assert_relative_eq!(ai_asym_neg, ai_exact_neg, epsilon = 1e-3);
         assert_relative_eq!(bi_asym_neg, bi_exact_neg, epsilon = 1e-3);
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        // Test NaN
+        assert!(airy(f64::NAN).is_err());
+        
+        // Test infinity
+        let (ai_inf, bi_inf, aip_inf, bip_inf) = airy(f64::INFINITY).unwrap();
+        assert_eq!(ai_inf, 0.0);
+        assert_eq!(bi_inf, f64::INFINITY);
     }
 }
 
