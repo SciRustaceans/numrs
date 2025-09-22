@@ -187,11 +187,11 @@ pub mod prelude {
     pub use crate::constants::*;
     pub use crate::utils::*;
     
-    // Re-export common mathematical functions
-    pub use std::f64::consts::*;
-    pub use std::f64::{abs, acos, asin, atan, atan2, cbrt, ceil, cos, cosh, exp, exp2, exp_m1, floor, 
-                      fract, hypot, ln, ln_1p, log, log10, log2, max, min, powf, powi, round, 
-                      signum, sin, sinh, sqrt, tan, tanh, trunc};
+    // Re-export common mathematical constants
+//    pub use std::f64::consts::*;
+    
+    // These functions are available directly on f64 values, so no need to re-export them
+    // Users can call them as methods on f64 values: x.abs(), x.cos(), etc.
 }
 
 #[cfg(test)]
