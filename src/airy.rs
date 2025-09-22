@@ -129,7 +129,8 @@ mod bessel_ik {
         (k, kp)
     }
     
-    fn gamma(x: f64) -> f64 {
+    // Make gamma function public so it can be used by bessel_jy module
+    pub fn gamma(x: f64) -> f64 {
         // Simple gamma function approximation using Lanczos
         if x <= 0.0 {
             return f64::NAN;
@@ -194,7 +195,7 @@ mod bessel_jy {
         let mut sum_deriv = 0.0;
         let x2 = x * x * -0.25; // -x²/4
         let mut term = 1.0;
-        let gamma_nu = gamma(xnu + 1.0);
+        let gamma_nu = bessel_ik::gamma(xnu + 1.0); // Use public gamma function
         
         for k in 0..20 {
             let kf = k as f64;
@@ -282,11 +283,6 @@ mod bessel_jy {
         let yp = sqrt_factor * (p * cos_z - q * sin_z);
         
         (y, yp)
-    }
-    
-    fn gamma(x: f64) -> f64 {
-        // Same gamma function as in bessel_ik
-        bessel_ik::gamma(x)
     }
 }
 
@@ -417,6 +413,14 @@ impl AiryCache {
 
     /// Precompute values for a range and cache them
     pub fn precompute_range(&self, start: f64, end: f64, num_points: usize) -> Result<(), String> {
+        if num_points == 0 {
+            return Ok(());
+        }
+        if num_points == 1 {
+            let _ = self.get(start)?;
+            return Ok(());
+        }
+        
         let step = (end - start) / (num_points - 1) as f64;
         
         for i in 0..num_points {
@@ -684,6 +688,28 @@ mod tests {
         let (ai_inf, bi_inf, aip_inf, bip_inf) = airy(f64::INFINITY).unwrap();
         assert_eq!(ai_inf, 0.0);
         assert_eq!(bi_inf, f64::INFINITY);
+        
+        // Test negative infinity
+        let (ai_neg_inf, bi_neg_inf, aip_neg_inf, bip_neg_inf) = airy(f64::NEG_INFINITY).unwrap();
+        assert_eq!(ai_neg_inf, 0.0);
+        assert_eq!(bi_neg_inf, 0.0);
+    }
+
+    #[test]
+    fn test_bessel_functions() {
+        // Test that Bessel functions are accessible
+        let result = bessel_ik::bessik(1.0, 0.5);
+        assert!(result.is_ok());
+        
+        let result = bessel_jy::bessjy(1.0, 0.5);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_gamma_function() {
+        // Test that gamma function is accessible
+        let gamma_val = bessel_ik::gamma(5.0);
+        assert_relative_eq!(gamma_val, 24.0, epsilon = 1e-10); // 4! = 24
     }
 }
 

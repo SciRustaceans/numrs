@@ -1,4 +1,3 @@
-use std::simd::{f64x4, SimdFloat};
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use std::f64::consts::LN_2;

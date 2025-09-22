@@ -111,16 +111,16 @@ pub mod toeplz;
 pub mod utils;
 pub mod vander;
 
-// Re-export commonly used items for easier access
-pub use airy::*;
-pub use bessel_j::*;
-pub use bessel_y1::*;
-pub use beta::*;
-pub use gamma_series::*;
-pub use gammln::*;
-pub use gauleg::*;
-pub use plgndr::*;
-pub use utils::*;
+// Re-export commonly used items for easier access (be selective to avoid conflicts)
+pub use airy::{ai, bi, ai_deriv, bi_deriv};
+pub use bessel_j::{bessel_j0, bessel_j1, bessel_jn};
+pub use bessel_y1::bessel_y1;
+pub use beta::{beta, ln_beta};
+pub use gamma_series::gamma_series;
+pub use gammln::gammln;
+pub use gauleg::gauleg;
+pub use plgndr::plgndr;
+pub use utils::{sign, pythag};
 
 // Common numerical constants
 pub mod constants {
@@ -187,11 +187,11 @@ pub mod prelude {
     pub use crate::constants::*;
     pub use crate::utils::*;
     
-    // Re-export common mathematical functions
+    // Re-export common mathematical constants
     pub use std::f64::consts::*;
-    pub use std::f64::{abs, acos, asin, atan, atan2, cbrt, ceil, cos, cosh, exp, exp2, exp_m1, floor, 
-                      fract, hypot, ln, ln_1p, log, log10, log2, max, min, powf, powi, round, 
-                      signum, sin, sinh, sqrt, tan, tanh, trunc};
+    
+    // These functions are available directly on f64 values, so no need to re-export them
+    // Users can call them as methods on f64 values: x.abs(), x.cos(), etc.
 }
 
 #[cfg(test)]

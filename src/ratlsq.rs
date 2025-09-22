@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
-use once_cell::sync::Lazy;
-use std::sync::{Arc, Mutex};
+//use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
 const NPFAC: usize = 8;
 const MAXIT: usize = 5;

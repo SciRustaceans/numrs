@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use ndarray::{Array1, ArrayView1, ArrayViewMut1, s};
+use ndarray::{Array1, ArrayView, ArrayViewMut, s};
 
 /// Convolution/Deconvolution implementation with FFT optimization
 /// Supports both convolution (isign=1) and deconvolution (isign=-1)
