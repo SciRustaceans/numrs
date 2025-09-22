@@ -54,8 +54,8 @@ pub fn splin2(
 pub fn splin2_batch(
     x1a: &[f64],
     x2a: &[f64],
-    ya: &Array2<f64],
-    y2a: &Array2<f64],
+    ya: &Array2<f64>,
+    y2a: &Array2<f64>,
     points: &[(f64, f64)],
 ) -> Vec<f64> {
     points.par_iter()
@@ -222,7 +222,7 @@ fn bicubic_spline_interpolate(
 pub fn spline2_interpolate(
     x1a: &[f64],
     x2a: &[f64],
-    ya: &Array2<f64],
+    ya: &Array2<f64>,
     x1: f64,
     x2: f64,
 ) -> f64 {

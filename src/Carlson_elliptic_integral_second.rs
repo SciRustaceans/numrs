@@ -1,10 +1,8 @@
 use std::error::Error;
 use std::fmt;
-use std::f64::consts::FRAC_1_3;
 use rayon::prelude::*;
-use std::sync::OnceLock;
 
-// Constants
+// Constants - Remove FRAC_1_3 and use direct calculations
 const ERRTOL: f64 = 0.05;
 const TINY: f64 = 1.0e-25;
 const BIG: f64 = 4.5e21;
@@ -152,6 +150,69 @@ impl EllipticCache {
     }
 }
 
+// We need to implement RF as well for the complete elliptic integrals
+/// Carlson elliptic integral of the first kind RF(x, y, z)
+fn rf(x: f64, y: f64, z: f64) -> EllipticResult<f64> {
+    // Constants for RF
+    const RF_ERRTOL: f64 = 0.08;
+    const RF_TINY: f64 = 1.5e-38;
+    const RF_BIG: f64 = 3.0e37;
+    const RF_C1: f64 = 1.0 / 24.0;
+    const RF_C2: f64 = 0.1;
+    const RF_C3: f64 = 3.0 / 44.0;
+    const RF_C4: f64 = 1.0 / 14.0;
+    const RF_THIRD: f64 = 1.0 / 3.0;
+
+    // Input validation
+    if x < 0.0 || y < 0.0 || z < 0.0 {
+        return Err(EllipticError::InvalidArguments(
+            "All arguments must be non-negative".to_string()
+        ));
+    }
+    
+    if x + y < RF_TINY || x + z < RF_TINY || y + z < RF_TINY {
+        return Err(EllipticError::InvalidArguments(
+            "Sum of any two arguments is too small".to_string()
+        ));
+    }
+    
+    if x > RF_BIG || y > RF_BIG || z > RF_BIG {
+        return Err(EllipticError::InvalidArguments(
+            "Arguments are too large".to_string()
+        ));
+    }
+
+    let mut xt = x;
+    let mut yt = y;
+    let mut zt = z;
+
+    loop {
+        let sqrtx = xt.sqrt();
+        let sqrty = yt.sqrt();
+        let sqrtz = zt.sqrt();
+        
+        let alamb = sqrtx * (sqrty + sqrtz) + sqrty * sqrtz;
+        
+        xt = 0.25 * (xt + alamb);
+        yt = 0.25 * (yt + alamb);
+        zt = 0.25 * (zt + alamb);
+        
+        let ave = RF_THIRD * (xt + yt + zt);
+        let delx = (ave - xt) / ave;
+        let dely = (ave - yt) / ave;
+        let delz = (ave - zt) / ave;
+        
+        let max_del = delx.abs().max(dely.abs()).max(delz.abs());
+        
+        if max_del <= RF_ERRTOL {
+            let e2 = delx * dely - delz * delz;
+            let e3 = delx * dely * delz;
+            
+            return Ok((1.0 + (RF_C1 * e2 - RF_C2 - RF_C3 * e3) * e2 + RF_C4 * e3) / ave.sqrt());
+        }
+    }
+}
+
 /// Additional utility functions
 
 /// Computes the complete elliptic integral of the second kind E(m)
@@ -251,13 +312,6 @@ impl EllipticBenchmark {
     }
 }
 
-// We need to implement RF as well for the complete elliptic integrals
-fn rf(x: f64, y: f64, z: f64) -> EllipticResult<f64> {
-    // Implementation of RF would go here
-    // This is a placeholder - in a real implementation, we would include the RF function
-    Err(EllipticError::ComputationError("RF not implemented".to_string()))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -319,7 +373,6 @@ mod tests {
         let results = rd_parallel(&args);
         
         assert_eq!(results.len(), 4);
-        // We expect some to fail due to missing RF implementation
-        // In a complete implementation, we would test with valid arguments
+        assert!(results.iter().all(|r| r.is_ok()));
     }
 }

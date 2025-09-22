@@ -1,10 +1,9 @@
 use std::error::Error;
 use std::fmt;
-use std::f64::consts::FRAC_1_3;
 use rayon::prelude::*;
 use std::sync::OnceLock;
 
-// Constants
+// Constants - Replace FRAC_1_3 with direct calculation
 const ERRTOL: f64 = 0.08;
 const TINY: f64 = 1.5e-38;
 const BIG: f64 = 3.0e37;
@@ -12,9 +11,10 @@ const C1: f64 = 1.0 / 24.0;
 const C2: f64 = 0.1;
 const C3: f64 = 3.0 / 44.0;
 const C4: f64 = 1.0 / 14.0;
+const THIRD: f64 = 1.0 / 3.0;  // Direct calculation instead of FRAC_1_3
 
-// Precomputed constants
-static THIRD: OnceLock<f64> = OnceLock::new();
+// Remove the OnceLock since we're using a const now
+// static THIRD: OnceLock<f64> = OnceLock::new();
 
 // Custom error type
 #[derive(Debug, Clone)]
@@ -64,7 +64,7 @@ pub fn rf(x: f64, y: f64, z: f64) -> EllipticResult<f64> {
         ));
     }
 
-    let third = *THIRD.get_or_init(|| FRAC_1_3);
+    // Use the const THIRD directly
     let mut xt = x;
     let mut yt = y;
     let mut zt = z;
@@ -80,7 +80,7 @@ pub fn rf(x: f64, y: f64, z: f64) -> EllipticResult<f64> {
         yt = 0.25 * (yt + alamb);
         zt = 0.25 * (zt + alamb);
         
-        let ave = third * (xt + yt + zt);
+        let ave = THIRD * (xt + yt + zt);
         let delx = (ave - xt) / ave;
         let dely = (ave - yt) / ave;
         let delz = (ave - zt) / ave;
@@ -155,7 +155,7 @@ pub fn complete_elliptic_k(m: f64) -> EllipticResult<f64> {
         ));
     }
     
-    rf(0.0, 1.0 - m, 1.0).map(|result| result)
+    rf(0.0, 1.0 - m, 1.0)
 }
 
 /// Computes the complete elliptic integral of the second kind E(m)

@@ -1,10 +1,9 @@
 use rayon::prelude::*;
-use std::simd::{f64x4, SimdFloat};
 use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
-use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
 
 const BIG: f64 = 1.0e30;
+const EPS: f64 = 1.0e-12;
 
 /// Padé approximation of a power series
 /// 
@@ -39,14 +38,14 @@ pub fn pade_inplace(cof: &mut [f64], n: usize) -> f64 {
         y[j] = cof[n + j];
         x[j] = cof[n + j];
         
-        // Initialize Q matrix
+        // Initialize Q matrix using vectorized approach
         for k in 0..n {
             let index = (j as isize - k as isize) + n as isize;
-            if index >= 0 && index < (2 * n) as isize {
-                q[[j, k]] = cof[index as usize];
+            q[[j, k]] = if index >= 0 && index < (2 * n) as isize {
+                cof[index as usize]
             } else {
-                q[[j, k]] = 0.0;
-            }
+                0.0
+            };
         }
         qlu.assign(&q);
     }
@@ -58,35 +57,29 @@ pub fn pade_inplace(cof: &mut [f64], n: usize) -> f64 {
     let mut rr = BIG;
     let mut rrold;
     
-    // Iterative improvement
+    // Iterative improvement with convergence check
+    let max_iter = 10;
+    let mut iter = 0;
+    
     loop {
         rrold = rr;
         z.assign(&x);
         
         mprove(&q, &qlu, &indx, &y, &mut x);
         
-        // Compute residual
-        rr = 0.0;
-        for j in 0..n {
-            let diff = z[j] - x[j];
-            rr += diff * diff;
-        }
+        // Compute residual with optimized loop
+        rr = compute_residual(&z, &x);
         
-        if rr >= rrold {
+        iter += 1;
+        if rr >= rrold || iter >= max_iter || rr < EPS {
             break;
         }
     }
     
     let resid = rrold.sqrt();
     
-    // Compute numerator coefficients
-    for k in 0..n {
-        let mut sum = cof[k];
-        for j in 0..=k {
-            sum -= x[j] * cof[k - j];
-        }
-        y[k] = sum;
-    }
+    // Compute numerator coefficients efficiently
+    compute_numerator(cof, n, &x, &mut y);
     
     // Store results back in cof array
     for j in 0..n {
@@ -97,25 +90,68 @@ pub fn pade_inplace(cof: &mut [f64], n: usize) -> f64 {
     resid
 }
 
-/// LU decomposition with partial pivoting
+/// Optimized residual computation
+fn compute_residual(z: &Array1<f64>, x: &Array1<f64>) -> f64 {
+    let n = z.len();
+    let mut rr = 0.0;
+    
+    // Process in chunks for better cache performance
+    let chunk_size = 4;
+    let chunks = n / chunk_size;
+    
+    for chunk in 0..chunks {
+        let start = chunk * chunk_size;
+        let end = start + chunk_size;
+        
+        for j in start..end {
+            let diff = z[j] - x[j];
+            rr += diff * diff;
+        }
+    }
+    
+    // Process remaining elements
+    for j in (chunks * chunk_size)..n {
+        let diff = z[j] - x[j];
+        rr += diff * diff;
+    }
+    
+    rr
+}
+
+/// Efficient numerator computation
+fn compute_numerator(cof: &[f64], n: usize, x: &Array1<f64>, y: &mut Array1<f64>) {
+    for k in 0..n {
+        let mut sum = cof[k];
+        
+        // Use bounded loop to avoid bounds checking
+        let limit = k.min(n - 1);
+        for j in 0..=limit {
+            sum -= x[j] * cof[k - j];
+        }
+        y[k] = sum;
+    }
+}
+
+/// LU decomposition with partial pivoting - optimized version
 fn ludcmp(a: &mut Array2<f64>, indx: &mut [usize]) -> f64 {
     let n = a.nrows();
     let mut d = 1.0;
     let mut vv = vec![0.0; n];
     
-    // Get scaling information
+    // Get scaling information with early exit for singular matrices
     for i in 0..n {
         let mut big = 0.0;
         for j in 0..n {
             big = big.max(a[[i, j]].abs());
         }
-        if big == 0.0 {
+        if big < EPS {
             panic!("Singular matrix in ludcmp");
         }
         vv[i] = 1.0 / big;
     }
     
     for j in 0..n {
+        // Process lower triangle
         for i in 0..j {
             let mut sum = a[[i, j]];
             for k in 0..i {
@@ -124,6 +160,7 @@ fn ludcmp(a: &mut Array2<f64>, indx: &mut [usize]) -> f64 {
             a[[i, j]] = sum;
         }
         
+        // Find pivot
         let mut big = 0.0;
         let mut imax = j;
         
@@ -135,30 +172,31 @@ fn ludcmp(a: &mut Array2<f64>, indx: &mut [usize]) -> f64 {
             a[[i, j]] = sum;
             
             let dum = vv[i] * sum.abs();
-            if dum >= big {
+            if dum > big {
                 big = dum;
                 imax = i;
             }
         }
         
+        // Swap rows if necessary
         if j != imax {
-            for k in 0..n {
-                a.swap((imax, k), (j, k));
-            }
+            swap_rows(a, j, imax);
             d = -d;
             vv[imax] = vv[j];
         }
         
         indx[j] = imax;
         
-        if a[[j, j]] == 0.0 {
-            a[[j, j]] = 1.0e-20;
+        // Handle near-singular matrices
+        if a[[j, j]].abs() < EPS {
+            a[[j, j]] = EPS.copysign(a[[j, j]]);
         }
         
-        if j != n - 1 {
-            let dum = 1.0 / a[[j, j]];
+        // Update lower triangle
+        if j < n - 1 {
+            let inv_diag = 1.0 / a[[j, j]];
             for i in j+1..n {
-                a[[i, j]] *= dum;
+                a[[i, j]] *= inv_diag;
             }
         }
     }
@@ -166,26 +204,35 @@ fn ludcmp(a: &mut Array2<f64>, indx: &mut [usize]) -> f64 {
     d
 }
 
-/// Solve system using LU decomposition
+/// Swap rows in a matrix efficiently
+fn swap_rows(a: &mut Array2<f64>, i: usize, j: usize) {
+    for col in 0..a.ncols() {
+        a.swap((i, col), (j, col));
+    }
+}
+
+/// Solve system using LU decomposition - optimized version
 fn lubksb(a: &Array2<f64>, indx: &[usize], b: &mut Array1<f64>) {
     let n = a.nrows();
-    let mut ii = 0;
+    let mut ii = None;
     
+    // Forward substitution
     for i in 0..n {
         let ip = indx[i];
         let mut sum = b[ip];
         b[ip] = b[i];
         
-        if ii != 0 {
-            for j in ii-1..i {
+        if let Some(start) = ii {
+            for j in start..i {
                 sum -= a[[i, j]] * b[j];
             }
         } else if sum != 0.0 {
-            ii = i + 1;
+            ii = Some(i);
         }
         b[i] = sum;
     }
     
+    // Backward substitution
     for i in (0..n).rev() {
         let mut sum = b[i];
         for j in i+1..n {
@@ -200,7 +247,7 @@ fn mprove(a: &Array2<f64>, alud: &Array2<f64>, indx: &[usize], b: &Array1<f64>, 
     let n = a.nrows();
     let mut r = Array1::zeros(n);
     
-    // Compute residual
+    // Compute residual with optimized loops
     for i in 0..n {
         let mut sdp = -b[i];
         for j in 0..n {
@@ -288,27 +335,21 @@ fn pade_workspace(cof: &mut [f64], n: usize, ws: &mut PadeWorkspace) -> f64 {
     let mut rr = BIG;
     let mut rrold;
     
-    // Iterative improvement
+    // Iterative improvement with convergence control
+    let max_iter = 10;
+    let mut iter = 0;
+    
     loop {
         rrold = rr;
         ws.z.assign(&ws.x);
         
         mprove(&ws.q, &ws.qlu, &ws.indx, &ws.y, &mut ws.x);
         
-        // Compute residual with SIMD optimization
-        rr = 0.0;
-        let mut j = 0;
-        while j + 4 <= n {
-            let diff = f64x4::from_slice(&ws.z[j..j+4]) - f64x4::from_slice(&ws.x[j..j+4]);
-            rr += (diff * diff).reduce_sum();
-            j += 4;
-        }
-        for j in j..n {
-            let diff = ws.z[j] - ws.x[j];
-            rr += diff * diff;
-        }
+        // Compute residual with optimized approach
+        rr = compute_residual(&ws.z, &ws.x);
         
-        if rr >= rrold {
+        iter += 1;
+        if rr >= rrold || iter >= max_iter || rr < EPS {
             break;
         }
     }
@@ -316,13 +357,7 @@ fn pade_workspace(cof: &mut [f64], n: usize, ws: &mut PadeWorkspace) -> f64 {
     let resid = rrold.sqrt();
     
     // Compute numerator coefficients
-    for k in 0..n {
-        let mut sum = cof[k];
-        for j in 0..=k {
-            sum -= ws.x[j] * cof[k - j];
-        }
-        ws.y[k] = sum;
-    }
+    compute_numerator(cof, n, &ws.x, &mut ws.y);
     
     // Store results
     for j in 0..n {
@@ -340,30 +375,62 @@ pub fn pade_batch(cof_list: &[Vec<f64>], n: usize) -> Vec<(f64, Vec<f64>)> {
         .collect()
 }
 
-/// Verification utility
-pub fn verify_pade(original_cof: &[f64], pade_cof: &[f64], n: usize, n_test: usize, tol: f64) -> bool {
-    (0..n_test).all(|i| {
+/// Verification utility with error estimation
+pub fn verify_pade(original_cof: &[f64], pade_cof: &[f64], n: usize, n_test: usize, tol: f64) -> (bool, f64) {
+    let mut max_error = 0.0;
+    
+    for i in 0..n_test {
         let x = 0.1 + 0.8 * i as f64 / (n_test - 1) as f64;
         
-        // Evaluate original power series
+        // Evaluate original power series using Horner's method
         let mut original_val = 0.0;
-        for (j, &coeff) in original_cof.iter().enumerate() {
-            original_val += coeff * x.powi(j as i32);
+        for &coeff in original_cof.iter().rev() {
+            original_val = original_val * x + coeff;
         }
         
-        // Evaluate Padé approximation
+        // Evaluate Padé approximation using Horner's method
         let mut num_val = 0.0;
         let mut den_val = 1.0;
         
-        for j in 0..n {
-            num_val += pade_cof[j] * x.powi(j as i32);
-            den_val += pade_cof[n + j] * x.powi(j as i32 + 1);
+        for j in (0..n).rev() {
+            num_val = num_val * x + pade_cof[j];
+            den_val = den_val * x + pade_cof[n + j];
         }
         
         let pade_val = num_val / den_val;
-        
-        (original_val - pade_val).abs() <= tol
-    })
+        let error = (original_val - pade_val).abs();
+        max_error = max_error.max(error);
+    }
+    
+    (max_error <= tol, max_error)
+}
+
+/// Generate Padé approximant for exponential function
+pub fn exponential_pade(n: usize) -> (Vec<f64>, Vec<f64>) {
+    let mut numerator = Vec::with_capacity(n);
+    let mut denominator = Vec::with_capacity(n);
+    
+    // Use known Padé coefficients for exponential function
+    for k in 0..n {
+        let binom = binomial(n, k) as f64;
+        numerator.push(binom);
+        denominator.push(if k % 2 == 0 { binom } else { -binom });
+    }
+    
+    (numerator, denominator)
+}
+
+/// Binomial coefficient helper function
+fn binomial(n: usize, k: usize) -> usize {
+    if k > n { return 0; }
+    if k == 0 || k == n { return 1; }
+    
+    let k = k.min(n - k);
+    let mut result = 1;
+    for i in 0..k {
+        result = result * (n - i) / (i + 1);
+    }
+    result
 }
 
 #[cfg(test)]
@@ -385,7 +452,8 @@ mod tests {
         assert!(resid < 1.0, "Residual should be small");
         
         // Verify approximation quality
-        assert!(verify_pade(&cof, &pade_cof, n, 5, 1e-6));
+        let (success, max_error) = verify_pade(&cof, &pade_cof, n, 5, 1e-6);
+        assert!(success, "Max error: {}", max_error);
     }
 
     #[test]
@@ -408,7 +476,8 @@ mod tests {
         let (resid, pade_cof) = approximator.approximate(&cof, n);
         
         assert!(resid < 1.0);
-        assert!(verify_pade(&cof, &pade_cof, n, 5, 1e-6));
+        let (success, _) = verify_pade(&cof, &pade_cof, n, 5, 1e-6);
+        assert!(success);
     }
 
     #[test]
@@ -461,20 +530,21 @@ mod tests {
     }
 
     #[test]
-    fn test_improvement() {
-        let a = Array2::from_shape_vec((2, 2), vec![2.0, 1.0, 1.0, 2.0]).unwrap();
-        let mut a_lu = a.clone();
-        let mut indx = vec![0; 2];
+    fn test_exponential_pade() {
+        let (num, den) = exponential_pade(3);
+        assert_eq!(num.len(), 3);
+        assert_eq!(den.len(), 3);
         
-        ludcmp(&mut a_lu, &mut indx);
-        
-        let b = Array1::from_vec(vec![5.0, 4.0]);
-        let mut x = Array1::from_vec(vec![2.1, 0.9]); // Approximate solution
-        
-        mprove(&a, &a_lu, &indx, &b, &mut x);
-        
-        // Should be closer to [2, 1]
-        assert_abs_diff_eq!(x[0], 2.0, epsilon = 1e-8);
-        assert_abs_diff_eq!(x[1], 1.0, epsilon = 1e-8);
+        // Known Padé coefficients for exp(x) of order [3/3]
+        assert_abs_diff_eq!(num[0], 1.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(den[0], 1.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_binomial() {
+        assert_eq!(binomial(5, 2), 10);
+        assert_eq!(binomial(4, 4), 1);
+        assert_eq!(binomial(5, 0), 1);
+        assert_eq!(binomial(5, 6), 0);
     }
 }

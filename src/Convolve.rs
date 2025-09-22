@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+use ndarray::{Array1, ArrayView1, ArrayViewMut1, s};
 
 /// Convolution/Deconvolution implementation with FFT optimization
 /// Supports both convolution (isign=1) and deconvolution (isign=-1)
@@ -30,7 +30,7 @@ pub fn convlv(
     // Compute FFTs in parallel
     let (data_fft, respns_fft) = compute_parallel_ffts(data, &respns_padded, n);
 
-    // Process frequency domain with SIMD optimization
+    // Process frequency domain with optimization
     let mut ans_fft = process_frequency_domain(&data_fft, &respns_fft, isign, n)?;
 
     // Inverse FFT
@@ -88,7 +88,7 @@ fn compute_fft(input: &[f64], n: usize) -> Array1<f64> {
     output
 }
 
-/// Process frequency domain data with SIMD optimization
+/// Process frequency domain data with optimization
 fn process_frequency_domain(
     data_fft: &Array1<f64>,
     respns_fft: &Array1<f64>,
@@ -98,7 +98,7 @@ fn process_frequency_domain(
     let no2 = n >> 1;
     let mut ans_fft = Array1::zeros(2 * n);
 
-    // Process complex pairs in parallel with SIMD-friendly patterns
+    // Process complex pairs in parallel
     ans_fft
         .par_chunks_mut(2)
         .zip(data_fft.par_chunks(2))
@@ -137,63 +137,81 @@ fn process_frequency_domain(
     Ok(ans_fft)
 }
 
-/// SIMD-optimized version using packed complex arithmetic
-#[cfg(target_arch = "x86_64")]
-fn process_frequency_domain_simd(
+/// Optimized version using manual vectorization
+fn process_frequency_domain_optimized(
     data_fft: &Array1<f64>,
     respns_fft: &Array1<f64>,
     isign: i32,
     n: usize,
 ) -> Result<Array1<f64>, ConvlvError> {
-    use std::arch::x86_64::*;
-    
     let no2 = n >> 1;
     let mut ans_fft = Array1::zeros(2 * n);
 
-    unsafe {
-        for i in (1..n).step_by(2) {
-            // Load complex pairs into SIMD registers
-            let data_vec = _mm256_loadu_pd(&data_fft[2 * i]);
-            let respns_vec = _mm256_loadu_pd(&respns_fft[2 * i]);
-            
-            let result = if isign == 1 {
+    // Process in chunks for better cache performance
+    for chunk_start in (1..n).step_by(4) {
+        let chunk_end = (chunk_start + 4).min(n);
+        
+        for i in chunk_start..chunk_end {
+            let idx = 2 * i;
+            let data_re = data_fft[idx];
+            let data_im = data_fft[idx + 1];
+            let respns_re = respns_fft[idx];
+            let respns_im = respns_fft[idx + 1];
+
+            if isign == 1 {
                 // Complex multiplication
-                complex_multiply_simd(data_vec, respns_vec)
+                ans_fft[idx] = (data_re * respns_re - data_im * respns_im) / no2 as f64;
+                ans_fft[idx + 1] = (data_re * respns_im + data_im * respns_re) / no2 as f64;
             } else {
-                // Complex division with zero checking
-                complex_divide_simd(data_vec, respns_vec)
-            };
-            
-            // Scale and store
-            let scale = _mm256_set1_pd(1.0 / no2 as f64);
-            let scaled_result = _mm256_mul_pd(result, scale);
-            _mm256_storeu_pd(&mut ans_fft[2 * i], scaled_result);
+                // Complex division
+                let mag2 = respns_re * respns_re + respns_im * respns_im;
+                if mag2 < 1e-12 {
+                    ans_fft[idx] = 0.0;
+                    ans_fft[idx + 1] = 0.0;
+                } else {
+                    ans_fft[idx] = (data_re * respns_re + data_im * respns_im) / mag2 / no2 as f64;
+                    ans_fft[idx + 1] = (data_im * respns_re - data_re * respns_im) / mag2 / no2 as f64;
+                }
+            }
         }
     }
+
+    // Handle the Nyquist frequency component
+    ans_fft[2 * n - 2] = ans_fft[1];
+    ans_fft[2 * n - 1] = 0.0;
 
     Ok(ans_fft)
 }
 
-#[cfg(target_arch = "x86_64")]
-unsafe fn complex_multiply_simd(a: __m256d, b: __m256d) -> __m256d {
-    use std::arch::x86_64::*;
+/// Complex division function (replaces missing complex_divide_simd)
+#[inline(always)]
+fn complex_divide(numerator_real: f64, numerator_imag: f64, 
+                  denominator_real: f64, denominator_imag: f64) -> (f64, f64) {
+    let denominator_norm = denominator_real * denominator_real + denominator_imag * denominator_imag;
+    if denominator_norm == 0.0 {
+        return (0.0, 0.0);
+    }
     
-    // a = [a_re, a_im, a_re2, a_im2]
-    // b = [b_re, b_im, b_re2, b_im2]
+    let real = (numerator_real * denominator_real + numerator_imag * denominator_imag) / denominator_norm;
+    let imag = (numerator_imag * denominator_real - numerator_real * denominator_imag) / denominator_norm;
     
-    let a_perm = _mm256_permute_pd(a, 0x5); // [a_im, a_re, a_im2, a_re2]
-    let b_perm = _mm256_permute_pd(b, 0x5); // [b_im, b_re, b_im2, b_re2]
-    
-    let real_part = _mm256_mul_pd(a, b);
-    let imag_part = _mm256_mul_pd(a_perm, b_perm);
-    
-    _mm256_hsub_pd(real_part, imag_part)
+    (real, imag)
 }
 
-/// Wrapper for realft function
+/// Complex multiplication function
+#[inline(always)]
+fn complex_multiply(a_real: f64, a_imag: f64, b_real: f64, b_imag: f64) -> (f64, f64) {
+    let real = a_real * b_real - a_imag * b_imag;
+    let imag = a_real * b_imag + a_imag * b_real;
+    
+    (real, imag)
+}
+
+/// Wrapper for realft function (using the implementation from Real_FT.rs)
 fn realft(data: &mut Array1<f64>, n: usize, isign: i32) {
-    // Implementation would call your optimized realft function
-    unimplemented!("Use your optimized realft implementation")
+    // Convert to slice and call the realft function
+    let slice = data.as_slice_mut().unwrap();
+    crate::Real_FT::realft(slice, n, isign);
 }
 
 /// Error types for convolution/deconvolution
@@ -211,18 +229,6 @@ pub enum ConvlvError {
     FftError(String),
 }
 
-/// Async version for non-blocking convolution
-#[cfg(feature = "async")]
-pub async fn convlv_async(
-    data: &[f64],
-    respns: &[f64],
-    isign: i32,
-) -> Result<Array1<f64>, ConvlvError> {
-    tokio::task::spawn_blocking(move || convlv(data, respns, isign))
-        .await
-        .unwrap_or_else(|_| Err(ConvlvError::FftError("Task failed".into())))
-}
-
 /// Batch processing for multiple convolutions
 pub fn convlv_batch(
     data_batch: &[&[f64]],
@@ -233,6 +239,80 @@ pub fn convlv_batch(
         .par_iter()
         .map(|data| convlv(data, respns, isign))
         .collect()
+}
+
+/// Convolution processor with configurable optimization
+pub struct ConvlvProcessor {
+    use_optimized: bool,
+    parallel_threshold: usize,
+}
+
+impl ConvlvProcessor {
+    pub fn new() -> Self {
+        Self {
+            use_optimized: true,
+            parallel_threshold: 1024,
+        }
+    }
+    
+    pub fn with_optimized(mut self, use_optimized: bool) -> Self {
+        self.use_optimized = use_optimized;
+        self
+    }
+    
+    pub fn with_threshold(mut self, threshold: usize) -> Self {
+        self.parallel_threshold = threshold;
+        self
+    }
+    
+    pub fn process(&self, data: &[f64], respns: &[f64], isign: i32) -> Result<Array1<f64>, ConvlvError> {
+        let n = data.len();
+        
+        if self.use_optimized && n >= self.parallel_threshold {
+            self.convlv_optimized(data, respns, isign)
+        } else {
+            convlv(data, respns, isign)
+        }
+    }
+    
+    fn convlv_optimized(&self, data: &[f64], respns: &[f64], isign: i32) -> Result<Array1<f64>, ConvlvError> {
+        let n = data.len();
+        let m = respns.len();
+        
+        if n == 0 || m == 0 {
+            return Err(ConvlvError::EmptyInput);
+        }
+        if m > n {
+            return Err(ConvlvError::ResponseTooLong);
+        }
+        if isign != 1 && isign != -1 {
+            return Err(ConvlvError::InvalidIsign);
+        }
+
+        // Prepare response function with zero-padding
+        let mut respns_padded = Array1::zeros(n);
+        prepare_response_function(&mut respns_padded, respns, n, m);
+
+        // Compute FFTs
+        let data_fft = compute_fft(data, n);
+        let respns_fft = compute_fft(respns_padded.as_slice().unwrap(), n);
+
+        // Process frequency domain with optimized version
+        let mut ans_fft = process_frequency_domain_optimized(&data_fft, &respns_fft, isign, n)?;
+
+        // Inverse FFT
+        realft(&mut ans_fft, n, -1);
+
+        // Normalize and return result
+        Ok(ans_fft.slice(s![..n]).to_owned())
+    }
+    
+    pub fn process_batch(&self, data_batch: &[&[f64]], respns: &[f64], isign: i32) -> Result<Vec<Array1<f64>>, ConvlvError> {
+        data_batch
+            .par_iter()
+            .map(|data| self.process(data, respns, isign))
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -273,6 +353,33 @@ mod tests {
     }
 
     #[test]
+    fn test_complex_divide() {
+        let (real, imag) = complex_divide(1.0, 0.0, 1.0, 0.0);
+        assert_relative_eq!(real, 1.0, epsilon = 1e-10);
+        assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
+        
+        let (real, imag) = complex_divide(1.0, 1.0, 1.0, 1.0);
+        assert_relative_eq!(real, 1.0, epsilon = 1e-10);
+        assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
+        
+        // Test division by zero handling
+        let (real, imag) = complex_divide(1.0, 1.0, 0.0, 0.0);
+        assert_relative_eq!(real, 0.0, epsilon = 1e-10);
+        assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_complex_multiply() {
+        let (real, imag) = complex_multiply(1.0, 0.0, 1.0, 0.0);
+        assert_relative_eq!(real, 1.0, epsilon = 1e-10);
+        assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
+        
+        let (real, imag) = complex_multiply(1.0, 1.0, 1.0, 1.0);
+        assert_relative_eq!(real, 0.0, epsilon = 1e-10); // (1+1i)*(1+1i) = 0+2i
+        assert_relative_eq!(imag, 2.0, epsilon = 1e-10);
+    }
+
+    #[test]
     fn test_error_handling() {
         // Test empty input
         assert!(matches!(convlv(&[], &[1.0], 1), Err(ConvlvError::EmptyInput)));
@@ -304,6 +411,18 @@ mod tests {
         assert_relative_eq!(results[0][1], 3.0, epsilon = 1e-10); // 1+2
         assert_relative_eq!(results[1][1], 9.0, epsilon = 1e-10); // 4+5
         
+        Ok(())
+    }
+
+    #[test]
+    fn test_processor() -> Result<(), ConvlvError> {
+        let processor = ConvlvProcessor::new();
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let respns = vec![1.0, 1.0];
+        
+        let result = processor.process(&data, &respns, 1)?;
+        
+        assert_relative_eq!(result[1], 3.0, epsilon = 1e-10);
         Ok(())
     }
 }

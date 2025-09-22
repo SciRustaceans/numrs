@@ -1,4 +1,4 @@
-use std::simd::{f64x4, SimdFloat};
+std::simd::prelude::SimdFloat
 use std::ptr;
 
 /// Converts Chebyshev coefficients to power series coefficients with maximum performance

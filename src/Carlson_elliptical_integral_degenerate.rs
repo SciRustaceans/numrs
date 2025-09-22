@@ -15,7 +15,8 @@ const C1: f64 = 0.3;
 const C2: f64 = 1.0 / 7.0;
 const C3: f64 = 0.375;
 const C4: f64 = 9.0 / 22.0;
-
+const THIRD: f64 = 1.0 / 3.0;  // Direct calculation instead of FRAC_1_3
+//
 // Custom error type
 #[derive(Debug, Clone)]
 pub enum EllipticError {

@@ -153,7 +153,7 @@ impl MiserIntegrator {
         // Generate random midpoints with dithering
         let mut rng = self.rng.lock().unwrap();
         for j in 0..ndim {
-            let s = if rng.gen::<f64>() < 0.5 { -self.dith } else { self.dith };
+            let s = if rng.r#gen::<f64>() < 0.5 { -self.dith } else { self.dith };
             rmid[j] = (0.5 + s) * regn.lower[j] + (0.5 - s) * regn.upper[j];
         }
 

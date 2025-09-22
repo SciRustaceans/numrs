@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Divisor leading coefficient cannot be zero")]
-    test_zero_divisor() {
+    fn test_zero_divisor() {
         let u = vec![1.0, 2.0, 1.0];
         let v = vec![0.0, 1.0]; // Leading coefficient is zero
         
@@ -403,7 +403,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Dividend degree must be >= divisor degree")]
-    test_dividend_smaller_degree() {
+    fn test_dividend_smaller_degree() {
         let u = vec![1.0, 2.0]; // x + 2
         let v = vec![1.0, 0.0, 1.0]; // x² + 1
         

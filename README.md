@@ -70,6 +70,8 @@ Numrs
 - FFT2
 - Real_FT
 - Sin_FT
+- Cos_FT
+- Cos_FT2
 - Fourn
 - Real_FT3
 
@@ -81,14 +83,14 @@ Numrs
 
 - [ ] Fix SVD (4 unit tests currently failing)  
 - [ ] Add multithreading to interpolation methods (e.g., `polcoe`)  
-- [ ] Combine and refactor linear algebra routines for cleaner structure  
-- [ ] Link library routines internally to reduce redundancy  
-- [ ] Expand documentation on method usage  
+- [ ] Combine and refactor linear algebra routines for cleaner structure  (In progress)
+- [ ] Link library routines internally to reduce redundancy (In progress) 
+- [ ] Expand documentation on method usage (Low Prio) 
 - [ ] Hypergeometric and Hypergeometric derivatives  
 - [x] Random numbers (especially Monte Carlo Methods)
 - [ ] Root finding and nonlinear sets of equations
 - [x] FFT implementations
-- [ ] Manage lib dependencies
+- [ ] Manage lib dependencies (In progress)
 - [ ] Fourier and Spectral Analysis (Lots of calls from FFT section of lib)
 ---
 
