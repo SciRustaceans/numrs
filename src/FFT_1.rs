@@ -1,6 +1,6 @@
+// FFT_1.rs - Fixed version
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use std::simd::{f64x2, Simd};
 
 pub fn four1(data: &mut [f64], nn: usize, isign: i32) {
     let n = nn * 2;
@@ -21,7 +21,7 @@ pub fn four1(data: &mut [f64], nn: usize, isign: i32) {
         j += m;
     }
 
-    // Daniel-Lanczos section with SIMD and parallelization
+    // Daniel-Lanczos section with parallelization
     let mut mmax = 2;
     while n > mmax {
         let istep = mmax << 1;
@@ -106,8 +106,8 @@ fn process_butterflies_parallel(data: &mut [f64], mmax: usize, istep: usize, wpr
         });
 }
 
-// SIMD-optimized version for modern CPUs
-pub fn four1_simd(data: &mut [f64], nn: usize, isign: i32) {
+// Optimized version without SIMD
+pub fn four1_optimized(data: &mut [f64], nn: usize, isign: i32) {
     let n = nn * 2;
     
     // Bit-reversal permutation (same as before)
@@ -130,69 +130,26 @@ pub fn four1_simd(data: &mut [f64], nn: usize, isign: i32) {
     while n > mmax {
         let istep = mmax << 1;
         let theta = isign as f64 * (2.0 * PI / mmax as f64);
+        let wtemp = (0.5 * theta).sin();
+        let wpr = -2.0 * wtemp * wtemp;
+        let wpi = theta.sin();
         
-        // Process with SIMD if possible
-        if mmax >= 4 && istep % 4 == 0 {
-            process_butterflies_simd(data, mmax, istep, theta);
-        } else {
-            let wtemp = (0.5 * theta).sin();
-            let wpr = -2.0 * wtemp * wtemp;
-            let wpi = theta.sin();
-            process_butterflies_sequential(data, mmax, istep, wpr, wpi, isign);
-        }
-        
+        process_butterflies_sequential(data, mmax, istep, wpr, wpi, isign);
         mmax = istep;
-    }
-}
-
-#[inline(always)]
-fn process_butterflies_simd(data: &mut [f64], mmax: usize, istep: usize, theta: f64) {
-    let mut wr = 1.0;
-    let mut wi = 0.0;
-    let wtemp = (0.5 * theta).sin();
-    let wpr = -2.0 * wtemp * wtemp;
-    let wpi = theta.sin();
-    
-    for m in (0..mmax).step_by(2) {
-        // Use SIMD for processing multiple butterflies at once
-        for i in (m..data.len()).step_by(istep) {
-            if i + mmax + 3 >= data.len() {
-                continue;
-            }
-            
-            // Load data using SIMD
-            let data_i = f64x2::from_slice(&data[i..i+2]);
-            let data_j = f64x2::from_slice(&data[i+mmax..i+mmax+2]);
-            
-            // Perform complex multiplication: (wr + i*wi) * (data_j.re + i*data_j.im)
-            let tempr = wr * data_j[0] - wi * data_j[1];
-            let tempi = wr * data_j[1] + wi * data_j[0];
-            
-            // Store results
-            data[i+mmax] = data[i] - tempr;
-            data[i+mmax+1] = data[i+1] - tempi;
-            data[i] += tempr;
-            data[i+1] += tempi;
-        }
-        
-        // Update rotation factors
-        let wtemp = wr;
-        wr = wtemp * wpr - wi * wpi + wr;
-        wi = wi * wpr + wtemp * wpi + wi;
     }
 }
 
 // Thread-safe FFT processor
 pub struct FFTProcessor {
     max_threads: usize,
-    use_simd: bool,
+    use_optimized: bool,
 }
 
 impl FFTProcessor {
     pub fn new() -> Self {
         Self {
             max_threads: rayon::current_num_threads(),
-            use_simd: true,
+            use_optimized: true,
         }
     }
     
@@ -201,16 +158,16 @@ impl FFTProcessor {
         self
     }
     
-    pub fn with_simd(mut self, use_simd: bool) -> Self {
-        self.use_simd = use_simd;
+    pub fn with_optimized(mut self, use_optimized: bool) -> Self {
+        self.use_optimized = use_optimized;
         self
     }
     
     pub fn fft(&self, data: &mut [f64], isign: i32) {
         let nn = data.len() / 2;
         
-        if self.use_simd && nn >= 512 {
-            four1_simd(data, nn, isign);
+        if self.use_optimized && nn >= 512 {
+            four1_optimized(data, nn, isign);
         } else if nn >= 2048 {
             // Use parallel version for large transforms
             rayon::scope(|s| {
@@ -244,6 +201,30 @@ pub fn real_to_complex(real_data: &[f64]) -> Vec<f64> {
 
 pub fn complex_to_real(complex_data: &[f64]) -> Vec<f64> {
     complex_data.iter().step_by(2).copied().collect()
+}
+
+pub fn magnitude_spectrum(complex_data: &[f64]) -> Vec<f64> {
+    complex_data.chunks(2)
+        .map(|chunk| {
+            if chunk.len() == 2 {
+                (chunk[0] * chunk[0] + chunk[1] * chunk[1]).sqrt()
+            } else {
+                0.0
+            }
+        })
+        .collect()
+}
+
+pub fn power_spectrum(complex_data: &[f64]) -> Vec<f64> {
+    complex_data.chunks(2)
+        .map(|chunk| {
+            if chunk.len() == 2 {
+                chunk[0] * chunk[0] + chunk[1] * chunk[1]
+            } else {
+                0.0
+            }
+        })
+        .collect()
 }
 
 // Benchmarking and testing
@@ -319,28 +300,23 @@ mod tests {
         
         println!("Parallel FFT batch: {:?}", duration);
     }
-}
 
-// Example usage
-fn main() {
-    // Example: FFT of a simple signal
-    let signal: Vec<f64> = (0..1024).map(|i| (2.0 * PI * i as f64 / 1024.0).sin()).collect();
-    let mut complex_signal = real_to_complex(&signal);
-    
-    println!("Performing FFT...");
-    let start = Instant::now();
-    
-    let processor = FFTProcessor::new();
-    processor.fft(&mut complex_signal, 1);
-    
-    let duration = start.elapsed();
-    println!("FFT completed in {:?}", duration);
-    
-    // Process frequency domain data here...
-    
-    // Inverse FFT
-    processor.fft(&mut complex_signal, -1);
-    for value in &mut complex_signal {
-        *value /= 1024.0; // Scale back
+    #[test]
+    fn test_spectrum_functions() {
+        let signal = test_signal();
+        let mut complex_signal = real_to_complex(&signal);
+        
+        four1(&mut complex_signal, signal.len(), 1);
+        
+        let magnitude = magnitude_spectrum(&complex_signal);
+        let power = power_spectrum(&complex_signal);
+        
+        assert_eq!(magnitude.len(), signal.len());
+        assert_eq!(power.len(), signal.len());
+        
+        // Check that power spectrum is square of magnitude spectrum
+        for (m, p) in magnitude.iter().zip(power.iter()) {
+            assert!((m * m - p).abs() < 1e-10);
+        }
     }
 }
