@@ -1,5 +1,5 @@
 // lib.rs
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use rayon::prelude::*;
 use ndarray::{Array1, Array2};
 use rand::{Rng, SeedableRng};
