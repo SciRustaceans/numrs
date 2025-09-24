@@ -1,7 +1,6 @@
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
-use ndarray::{Array1, ArrayView1};
 
 /// Chebyshev polynomial evaluation (Clenshaw's algorithm)
 pub fn chebev(a: f64, b: f64, c: &[f64], x: f64) -> f64 {
@@ -165,7 +164,7 @@ pub fn chint_inplace(a: f64, b: f64, c: &[f64], cint: &mut [f64]) {
 pub struct ChebyshevOperator {
     a: f64,
     b: f64,
-    cache: Mutex<lru::LruCache<usize, (Vec<f64>, Vec<f64>)>>,
+    cache: Mutex<std::collections::HashMap<usize, (Vec<f64>, Vec<f64>)>>,
 }
 
 impl ChebyshevOperator {
@@ -173,7 +172,7 @@ impl ChebyshevOperator {
         Self {
             a,
             b,
-            cache: Mutex::new(lru::LruCache::new(100)),
+            cache: Mutex::new(std::collections::HashMap::new()),
         }
     }
     
@@ -190,7 +189,7 @@ impl ChebyshevOperator {
             let deriv = chder(self.a, self.b, c, n);
             let integ = chint(self.a, self.b, c, n);
             
-            cache.put(key, (deriv.clone(), integ));
+            cache.insert(key, (deriv.clone(), integ));
             deriv
         } else {
             chder(self.a, self.b, c, n)
@@ -210,7 +209,7 @@ impl ChebyshevOperator {
             let deriv = chder(self.a, self.b, c, n);
             let integ = chint(self.a, self.b, c, n);
             
-            cache.put(key, (deriv, integ.clone()));
+            cache.insert(key, (deriv, integ.clone()));
             integ
         } else {
             chint(self.a, self.b, c, n)
@@ -232,13 +231,13 @@ pub fn chint_batch(a: f64, b: f64, coefficients_list: &[Vec<f64>], n: usize) -> 
         .collect()
 }
 
-/// NDArray versions for better integration
-pub fn chder_ndarray(a: f64, b: f64, c: &ArrayView1<f64>, n: usize) -> Array1<f64> {
-    Array1::from_vec(chder(a, b, c.as_slice().unwrap(), n))
+/// Simple vector wrapper functions for API consistency
+pub fn chder_vec(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
+    chder(a, b, c, n)
 }
 
-pub fn chint_ndarray(a: f64, b: f64, c: &ArrayView1<f64>, n: usize) -> Array1<f64> {
-    Array1::from_vec(chint(a, b, c.as_slice().unwrap(), n))
+pub fn chint_vec(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
+    chint(a, b, c, n)
 }
 
 /// Verification utilities
@@ -312,7 +311,7 @@ pub fn chint_cached(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
     operator.integral(c, n, true)
 }
 
-/// High-performance Chebyshev operations with SIMD optimization
+/// High-performance Chebyshev operations with precomputed scaling
 pub struct ChebyshevEngine {
     a: f64,
     b: f64,

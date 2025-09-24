@@ -1,7 +1,6 @@
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
-use ndarray::{Array1, ArrayView1};
 use std::f64::consts::PI;
 
 /// Computes Chebyshev coefficients for a function on interval [a, b]
@@ -89,7 +88,7 @@ pub struct ChebyshevApproximator<F> {
     b: f64,
     coefficients: Vec<f64>,
     func: F,
-    cache: Mutex<lru::LruCache<f64, f64>>,
+    cache: Mutex<std::collections::HashMap<f64, f64>>,
 }
 
 impl<F> ChebyshevApproximator<F>
@@ -104,7 +103,7 @@ where
             b,
             coefficients,
             func,
-            cache: Mutex::new(lru::LruCache::new(1000)),
+            cache: Mutex::new(std::collections::HashMap::new()),
         }
     }
     
@@ -122,7 +121,7 @@ where
                 (self.func)(x) // Fallback to actual function outside interval
             };
             
-            cache.put(x, result);
+            cache.insert(x, result);
             result
         } else {
             if x >= self.a && x <= self.b {
@@ -193,16 +192,16 @@ where
     coefficients
 }
 
-/// NDArray versions for better integration
-pub fn chebft_ndarray<F>(a: f64, b: f64, func: F, n: usize) -> Array1<f64>
+/// Simple vector wrapper for better API consistency
+pub fn chebft_vec<F>(a: f64, b: f64, func: F, n: usize) -> Vec<f64>
 where
     F: Fn(f64) -> f64 + Sync + Send,
 {
-    Array1::from_vec(chebft(a, b, func, n))
+    chebft(a, b, func, n)
 }
 
-pub fn chebev_ndarray(a: f64, b: f64, c: &ArrayView1<f64>, x: f64) -> f64 {
-    chebev(a, b, c.as_slice().unwrap(), x)
+pub fn chebev_vec(a: f64, b: f64, c: &[f64], x: f64) -> f64 {
+    chebev(a, b, c, x)
 }
 
 /// Error estimation for Chebyshev approximation
@@ -370,14 +369,14 @@ mod tests {
     }
 
     #[test]
-    fn test_ndarray_versions() {
+    fn test_vec_versions() {
         let a = -1.0;
         let b = 1.0;
         let n = 10;
         
-        let coefficients = chebft_ndarray(a, b, quadratic, n);
+        let coefficients = chebft_vec(a, b, quadratic, n);
         let x = 0.3;
-        let result = chebev_ndarray(a, b, &coefficients.view(), x);
+        let result = chebev_vec(a, b, &coefficients, x);
         
         assert_abs_diff_eq!(result, quadratic(x), epsilon = 1e-10);
     }

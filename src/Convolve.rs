@@ -1,8 +1,8 @@
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use ndarray::{Array1, ArrayView, ArrayViewMut, s};
+// Try importing like this instead:
+use crate::ndarray::{Array1, ArrayView, ArrayViewMut, s};/// Convolution/Deconvolution implementation with FFT optimization
 
-/// Convolution/Deconvolution implementation with FFT optimization
 /// Supports both convolution (isign=1) and deconvolution (isign=-1)
 pub fn convlv(
     data: &[f64],

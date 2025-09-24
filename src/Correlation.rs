@@ -1,6 +1,6 @@
 use std::f64::consts::PI;
 use rayon::prelude::*;
-use ndarray::{Array1, ArrayView1, ArrayViewMut1, s};
+use crate::ndarray::{Array1, ArrayView1, ArrayViewMut1, s};
 use thiserror::Error;
 
 /// Cross-correlation implementation with FFT optimization

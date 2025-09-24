@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-use std::f64::consts::FRAC_1_3;
 use rayon::prelude::*;
 
 // Constants
@@ -15,8 +14,8 @@ const C1: f64 = 0.3;
 const C2: f64 = 1.0 / 7.0;
 const C3: f64 = 0.375;
 const C4: f64 = 9.0 / 22.0;
-const THIRD: f64 = 1.0 / 3.0;  // Direct calculation instead of FRAC_1_3
-//
+const THIRD: f64 = 1.0 / 3.0;
+
 // Custom error type
 #[derive(Debug, Clone)]
 pub enum EllipticError {
@@ -89,7 +88,7 @@ pub fn rc(x: f64, y: f64) -> EllipticResult<f64> {
         xt = 0.25 * (xt + alamb);
         yt = 0.25 * (yt + alamb);
         
-        let ave = FRAC_1_3 * (xt + yt + yt);
+        let ave = THIRD * (xt + yt + yt);
         let s = (yt - ave) / ave;
         
         if s.abs() <= ERRTOL {
