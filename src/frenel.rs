@@ -257,7 +257,7 @@ pub fn frenel_asymptotic(x: f64) -> FresnelResult<FresnelIntegrals> {
 /// Benchmarking and performance monitoring
 pub struct FresnelBenchmark {
     pub times: Vec<std::time::Duration>,
-    pub errors: Vec<F64>,
+    pub errors: Vec<f64>,
 }
 
 impl FresnelBenchmark {
