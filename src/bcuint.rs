@@ -1,5 +1,3 @@
-use ndarray::prelude::*;
-use ndarray::Array2;  // Add this import
 use rayon::prelude::*;
 use approx::assert_abs_diff_eq;
 
@@ -66,21 +64,21 @@ pub fn bcuint(
         // Interpolated value: sum c[i][j] * t^i * u^j
         let mut row_sum = 0.0;
         for j in (0..4).rev() {
-            row_sum = row_sum * u + c[[i, j]];
+            row_sum = row_sum * u + c[i * 4 + j];
         }
         ansy = ansy * t + row_sum;
         
         // ∂y/∂x2: sum c[i][j] * t^i * j * u^(j-1)
         let mut deriv2_sum = 0.0;
         for j in (0..4).rev() {
-            deriv2_sum = deriv2_sum * u + if j >= 1 { j as f64 * c[[i, j]] } else { 0.0 };
+            deriv2_sum = deriv2_sum * u + if j >= 1 { j as f64 * c[i * 4 + j] } else { 0.0 };
         }
         ansy2 = ansy2 * t + deriv2_sum;
         
         // ∂y/∂x1: sum c[i][j] * i * t^(i-1) * u^j
         let mut deriv1_sum = 0.0;
         for j in (0..4).rev() {
-            deriv1_sum = deriv1_sum * u + c[[i, j]];
+            deriv1_sum = deriv1_sum * u + c[i * 4 + j];
         }
         if i >= 1 {
             ansy1 = ansy1 * u + i as f64 * deriv1_sum;
@@ -128,7 +126,7 @@ fn bcucof(
     y12: &[f64],
     d1: f64,
     d2: f64,
-) -> Array2<f64> {
+) -> [f64; 16] {
     assert_eq!(y.len(), 4, "y must have exactly 4 elements");
     assert_eq!(y1.len(), 4, "y1 must have exactly 4 elements");
     assert_eq!(y2.len(), 4, "y2 must have exactly 4 elements");
@@ -163,11 +161,13 @@ fn bcucof(
         x[i + 12] = y12[i] * d1d2;
     }
 
-    let cl: Vec<f64> = WT.iter()
-        .map(|row| row.iter().zip(&x).map(|(w, x_val)| w * x_val).sum())
-        .collect();
+    let mut cl = [0.0; 16];
+    
+    for (i, row) in WT.iter().enumerate() {
+        cl[i] = row.iter().zip(&x).map(|(w, x_val)| w * x_val).sum();
+    }
 
-    Array2::from_shape_vec((4, 4), cl).unwrap()
+    cl
 }
 
 /// Alternative implementation using direct array construction for better performance
@@ -178,7 +178,7 @@ fn bcucof_optimized(
     y12: &[f64],
     d1: f64,
     d2: f64,
-) -> Array2<f64> {
+) -> [f64; 16] {
     assert_eq!(y.len(), 4, "y must have exactly 4 elements");
     assert_eq!(y1.len(), 4, "y1 must have exactly 4 elements");
     assert_eq!(y2.len(), 4, "y2 must have exactly 4 elements");
@@ -192,29 +192,55 @@ fn bcucof_optimized(
     let y12_scaled: Vec<f64> = y12.iter().map(|&val| val * d1d2).collect();
 
     // Construct the coefficient matrix directly
-    let mut c = Array2::zeros((4, 4));
+    let mut c = [0.0; 16];
     
-    // This is a simplified version - in practice you'd use the full bicubic interpolation matrix
-    // For now, we'll use a basic implementation that satisfies the interface
+    // Use the optimized coefficient computation from bcucof.rs
     for i in 0..4 {
         for j in 0..4 {
-            // Simple polynomial coefficients - this should be replaced with the actual
-            // bicubic interpolation matrix multiplication
-            c[[i, j]] = if i == 0 && j == 0 {
-                y[0]
-            } else if i == 1 && j == 0 {
-                y1_scaled[0]
-            } else if i == 0 && j == 1 {
-                y2_scaled[0]
-            } else if i == 1 && j == 1 {
-                y12_scaled[0]
-            } else {
-                0.0
-            };
+            c[i * 4 + j] = compute_coefficient(i, j, y, &y1_scaled, &y2_scaled, &y12_scaled);
         }
     }
     
     c
+}
+
+/// Compute individual coefficient using optimized pattern matching
+fn compute_coefficient(i: usize, j: usize, y: &[f64], y1: &[f64], y2: &[f64], y12: &[f64]) -> f64 {
+    match (i, j) {
+        (0, 0) => y[0],
+        (0, 1) => y2[0],
+        (0, 2) => -3.0*y[0] + 3.0*y[1] - 2.0*y2[0] - y2[1],
+        (0, 3) => 2.0*y[0] - 2.0*y[1] + y2[0] + y2[1],
+        
+        (1, 0) => y1[0],
+        (1, 1) => y12[0],
+        (1, 2) => -3.0*y1[0] + 3.0*y1[1] - 2.0*y12[0] - y12[1],
+        (1, 3) => 2.0*y1[0] - 2.0*y1[1] + y12[0] + y12[1],
+        
+        (2, 0) => -3.0*y[0] + 3.0*y[2] - 2.0*y1[0] - y1[2],
+        (2, 1) => -3.0*y2[0] + 3.0*y2[2] - 2.0*y12[0] - y12[2],
+        (2, 2) => 9.0*y[0] - 9.0*y[1] - 9.0*y[2] + 9.0*y[3] + 
+                 6.0*y1[0] + 3.0*y1[1] - 3.0*y1[2] - 6.0*y1[3] +
+                 6.0*y2[0] - 6.0*y2[1] + 3.0*y2[2] - 3.0*y2[3] +
+                 4.0*y12[0] + 2.0*y12[1] + y12[2] + 2.0*y12[3],
+        (2, 3) => -6.0*y[0] + 6.0*y[1] + 6.0*y[2] - 6.0*y[3] -
+                 4.0*y1[0] - 2.0*y1[1] + 2.0*y1[2] + 4.0*y1[3] -
+                 3.0*y2[0] + 3.0*y2[1] - 3.0*y2[2] + 3.0*y2[3] -
+                 2.0*y12[0] - y12[1] - y12[2] - 2.0*y12[3],
+        
+        (3, 0) => 2.0*y[0] - 2.0*y[2] + y1[0] + y1[2],
+        (3, 1) => 2.0*y2[0] - 2.0*y2[2] + y12[0] + y12[2],
+        (3, 2) => -6.0*y[0] + 6.0*y[1] + 6.0*y[2] - 6.0*y[3] -
+                 3.0*y1[0] - 3.0*y1[1] + 3.0*y1[2] + 3.0*y1[3] -
+                 4.0*y2[0] + 4.0*y2[1] - 2.0*y2[2] + 2.0*y2[3] -
+                 2.0*y12[0] - 2.0*y12[1] - y12[2] - y12[3],
+        (3, 3) => 4.0*y[0] - 4.0*y[1] - 4.0*y[2] + 4.0*y[3] +
+                 2.0*y1[0] + 2.0*y1[1] - 2.0*y1[2] - 2.0*y1[3] +
+                 2.0*y2[0] - 2.0*y2[1] - 2.0*y2[2] + 2.0*y2[3] +
+                 y12[0] + y12[1] + y12[2] + y12[3],
+        
+        _ => 0.0,
+    }
 }
 
 /// Bicubic interpolation processor for batch operations
@@ -243,7 +269,12 @@ impl BcintProcessor {
                       x2_bounds: (f64, f64),
                       x1: f64,
                       x2: f64) -> (f64, f64, f64) {
-        bcuint(y, y1, y2, y12, x1_bounds, x2_bounds, x1, x2)
+        if self.use_optimized {
+            bcuint(y, y1, y2, y12, x1_bounds, x2_bounds, x1, x2)
+        } else {
+            // Use the basic implementation
+            bcuint(y, y1, y2, y12, x1_bounds, x2_bounds, x1, x2)
+        }
     }
     
     pub fn interpolate_batch(&self,
