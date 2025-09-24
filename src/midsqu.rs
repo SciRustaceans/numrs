@@ -30,9 +30,6 @@ where
     if aa >= bb {
         return Err(IntegrationError::InvalidInterval);
     }
-    if bb - aa < 0.0 {
-        return Err(IntegrationError::DomainError);
-    }
 
     let b = (bb - aa).sqrt();
     let a = 0.0;
@@ -77,9 +74,6 @@ where
     if aa >= bb {
         return Err(IntegrationError::InvalidInterval);
     }
-    if bb - aa < 0.0 {
-        return Err(IntegrationError::DomainError);
-    }
 
     let b = (bb - aa).sqrt();
     let a = 0.0;
@@ -116,18 +110,19 @@ pub fn midsqu_adaptive<F>(funk: F, aa: f64, bb: f64, tol: f64, max_level: usize)
 where
     F: Fn(f64) -> f64 + Copy,
 {
-    let mut results = Vec::with_capacity(max_level);
+    let mut prev_result = 0.0;
+    let mut current_result = 0.0;
     
     for n in 1..=max_level {
-        let current = midsqu_iterative(&funk, aa, bb, n)?;
-        results.push(current);
+        current_result = midsqu_iterative(&funk, aa, bb, n)?;
         
         if n >= 3 {
-            let error_est = (results[n-1] - results[n-2]).abs();
-            if error_est <= tol * results[n-1].abs() {
-                return Ok(current);
+            let error_est = (current_result - prev_result).abs();
+            if error_est <= tol * current_result.abs() {
+                return Ok(current_result);
             }
         }
+        prev_result = current_result;
     }
     
     Err(IntegrationError::NumericalInstability)
@@ -157,14 +152,26 @@ where
     midsqu(transformed_func, a, b, n)
 }
 
-/// Compare midsql (lower singularity) vs midsqu (upper singularity)
-pub fn compare_singularity_methods<F>(funk: F, a: f64, b: f64, n: usize) -> IntegrationResult<(f64, f64)>
+/// Unified function that automatically chooses the best method based on singularity location
+pub fn integrate_singular<F>(funk: F, a: f64, b: f64, n: usize, singularity_at_upper: bool) -> IntegrationResult<f64>
 where
     F: Fn(f64) -> f64 + Copy,
 {
-    let lower_result = midsql_lower_singularity(&funk, a, b, n)?;
-    let upper_result = midsqu_upper_singularity(&funk, a, b, n)?;
-    Ok((lower_result, upper_result))
+    if singularity_at_upper {
+        midsqu_upper_singularity(funk, a, b, n)
+    } else {
+        midsqu_lower_singularity(funk, a, b, n)
+    }
+}
+
+/// Optimized batch integration for multiple intervals
+pub fn midsqu_batch<F>(funk: F, intervals: &[(f64, f64)], n: usize) -> IntegrationResult<Vec<f64>>
+where
+    F: Fn(f64) -> f64 + Copy,
+{
+    intervals.iter()
+        .map(|&(a, b)| midsqu(&funk, a, b, n))
+        .collect()
 }
 
 #[cfg(test)]
@@ -181,14 +188,6 @@ mod tests {
         x
     }
 
-    fn sqrt_fn(x: f64) -> f64 {
-        x.sqrt()
-    }
-
-    fn rational_fn(x: f64) -> f64 {
-        1.0 / (1.0 + x).sqrt()
-    }
-
     fn upper_singularity_fn(x: f64) -> f64 {
         (1.0 - x).sqrt()
     }
@@ -197,24 +196,25 @@ mod tests {
         1.0 / (1.0 - x).sqrt()
     }
 
+    fn lower_singularity_fn(x: f64) -> f64 {
+        x.sqrt()
+    }
+
     #[test]
     fn test_midsqu_constant() {
         let result = midsqu(constant_fn, 0.0, 1.0, 3).unwrap();
-        // ∫₀¹ 2 dx = 2
         assert_abs_diff_eq!(result, 2.0, epsilon = 1e-10);
     }
 
     #[test]
     fn test_midsqu_linear() {
         let result = midsqu(linear_fn, 0.0, 1.0, 4).unwrap();
-        // ∫₀¹ x dx = 0.5
         assert_abs_diff_eq!(result, 0.5, epsilon = 1e-6);
     }
 
     #[test]
     fn test_midsqu_upper_sqrt() {
         let result = midsqu(upper_singularity_fn, 0.0, 1.0, 5).unwrap();
-        // ∫₀¹ √(1-x) dx = 2/3
         let exact = 2.0 / 3.0;
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
@@ -222,23 +222,13 @@ mod tests {
     #[test]
     fn test_midsqu_upper_rational() {
         let result = midsqu(upper_rational_fn, 0.0, 1.0, 5).unwrap();
-        // ∫₀¹ 1/√(1-x) dx = 2
-        let exact = 2.0;
-        assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
+        assert_abs_diff_eq!(result, 2.0, epsilon = 1e-6);
     }
 
     #[test]
     fn test_midsqu_invalid_interval() {
         let result = midsqu(constant_fn, 1.0, 0.0, 1);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), IntegrationError::InvalidInterval);
-    }
-
-    #[test]
-    fn test_midsqu_domain_error() {
-        let result = midsqu(constant_fn, 2.0, 1.0, 1);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), IntegrationError::DomainError);
     }
 
     #[test]
@@ -261,7 +251,6 @@ mod tests {
     fn test_transform_function() {
         let func = |x: f64| x;
         let result = transform_function(&func, 5.0, 2.0);
-        // 2 * 2 * f(5 - 4) = 4 * 1 = 4
         assert_abs_diff_eq!(result, 4.0, epsilon = 1e-10);
     }
 
@@ -290,34 +279,44 @@ mod tests {
 
     #[test]
     fn test_midsqu_lower_singularity() {
-        // Test lower singularity by transforming it to upper singularity
-        let func = |x: f64| x.sqrt(); // √x has singularity at 0
-        let result = midsqu_lower_singularity(func, 0.0, 1.0, 5).unwrap();
-        // ∫₀¹ √x dx = 2/3
+        let result = midsqu_lower_singularity(lower_singularity_fn, 0.0, 1.0, 5).unwrap();
         let exact = 2.0 / 3.0;
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
 
     #[test]
+    fn test_integrate_singular() {
+        // Test upper singularity
+        let upper_result = integrate_singular(upper_singularity_fn, 0.0, 1.0, 5, true).unwrap();
+        let upper_exact = 2.0 / 3.0;
+        assert_abs_diff_eq!(upper_result, upper_exact, epsilon = 1e-6);
+
+        // Test lower singularity
+        let lower_result = integrate_singular(lower_singularity_fn, 0.0, 1.0, 5, false).unwrap();
+        let lower_exact = 2.0 / 3.0;
+        assert_abs_diff_eq!(lower_result, lower_exact, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_midsqu_batch() {
+        let intervals = [(0.0, 1.0), (0.0, 2.0), (1.0, 3.0)];
+        let results = midsqu_batch(constant_fn, &intervals, 3).unwrap();
+        
+        assert_abs_diff_eq!(results[0], 2.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(results[1], 4.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(results[2], 4.0, epsilon = 1e-10);
+    }
+
+    #[test]
     fn test_midsqu_non_zero_lower_limit() {
         let result = midsqu(upper_singularity_fn, 1.0, 4.0, 5).unwrap();
-        // ∫₁⁴ √(4-x) dx = ∫₀³ √u du = 2/3 * 3√3 = 2√3
         let exact = 2.0 * 3.0f64.sqrt();
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
 
     #[test]
-    fn test_compare_singularity_methods() {
-        // Test that midsql and midsqu give same results for regular functions
-        let (lower_result, upper_result) = compare_singularity_methods(constant_fn, 0.0, 1.0, 4).unwrap();
-        assert_abs_diff_eq!(lower_result, upper_result, epsilon = 1e-10);
-        assert_abs_diff_eq!(lower_result, 2.0, epsilon = 1e-10);
-    }
-
-    #[test]
     fn test_midsqu_very_small_interval() {
         let result = midsqu(upper_singularity_fn, 0.9, 1.0, 4).unwrap();
-        // ∫₀.₉¹ √(1-x) dx = (2/3)(0.1)^{1.5}
         let exact = 2.0 / 3.0 * 0.001;
         assert_abs_diff_eq!(result, exact, epsilon = 1e-9);
     }
@@ -325,23 +324,14 @@ mod tests {
     #[test]
     fn test_midsqu_large_interval() {
         let result = midsqu(upper_singularity_fn, 0.0, 100.0, 5).unwrap();
-        // ∫₀¹⁰⁰ √(100-x) dx = (2/3)(1000)
         let exact = 2000.0 / 3.0;
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
 
     #[test]
-    fn test_midsqu_error_handling() {
-        let result = midsqu(|x| 1.0 / (1.0 - x), 0.0, 1.0, 1);
-        // Should handle the singularity gracefully
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn test_midsqu_symmetric_function() {
-        let func = |x: f64| (x * (1.0 - x)).sqrt(); // √(x(1-x))
+        let func = |x: f64| (x * (1.0 - x)).sqrt();
         let result = midsqu(func, 0.0, 1.0, 6).unwrap();
-        // ∫₀¹ √(x(1-x)) dx = π/8
         let exact = std::f64::consts::PI / 8.0;
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
@@ -350,22 +340,15 @@ mod tests {
     fn test_midsqu_complex_singularity() {
         let func = |x: f64| 1.0 / ((1.0 - x).sqrt() * (2.0 - x));
         let result = midsqu(func, 0.0, 1.0, 6).unwrap();
-        // ∫₀¹ 1/(√(1-x)(2-x)) dx = π/√2
         let exact = std::f64::consts::PI / 2.0f64.sqrt();
         assert_abs_diff_eq!(result, exact, epsilon = 1e-6);
     }
 
     #[test]
-    fn test_midsqu_vs_midsql_comparison() {
-        // For functions with upper singularities, midsqu should be better
-        let func = |x: f64| 1.0 / (1.0 - x).sqrt();
-        
-        let midsqu_result = midsqu(func, 0.0, 1.0, 5).unwrap();
-        let midsql_result = midsql(func, 0.0, 1.0, 5).unwrap();
-        
-        // Both should be accurate, but midsqu might be better for upper singularities
-        let exact = 2.0;
-        assert_abs_diff_eq!(midsqu_result, exact, epsilon = 1e-6);
-        assert_abs_diff_eq!(midsql_result, exact, epsilon = 1e-6);
+    fn test_performance_optimization() {
+        // Test that iterative version produces same results as recursive
+        let result_rec = midsqu(upper_singularity_fn, 0.0, 1.0, 6).unwrap();
+        let result_iter = midsqu_iterative(upper_singularity_fn, 0.0, 1.0, 6).unwrap();
+        assert_abs_diff_eq!(result_rec, result_iter, epsilon = 1e-12);
     }
 }

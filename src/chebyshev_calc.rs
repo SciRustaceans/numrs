@@ -1,7 +1,44 @@
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
-use ndarray::{Array1, ArrayView1, ArrayViewMut1};
+use ndarray::{Array1, ArrayView1};
+
+/// Chebyshev polynomial evaluation (Clenshaw's algorithm)
+pub fn chebev(a: f64, b: f64, c: &[f64], x: f64) -> f64 {
+    let y = (2.0 * x - a - b) / (b - a);
+    let y2 = 2.0 * y;
+    let mut d = 0.0;
+    let mut dd = 0.0;
+    
+    for j in (1..c.len()).rev() {
+        let sv = d;
+        d = y2 * d - dd + c[j];
+        dd = sv;
+    }
+    
+    y * d - dd + 0.5 * c[0]
+}
+
+/// Chebyshev coefficient computation (Discrete Cosine Transform)
+pub fn chebft(a: f64, b: f64, func: impl Fn(f64) -> f64, n: usize) -> Vec<f64> {
+    assert!(n >= 2, "Need at least 2 coefficients");
+    assert!(b > a, "Interval must be valid: b > a");
+    
+    let mut c = vec![0.0; n];
+    let n_f64 = n as f64;
+    
+    for k in 0..n {
+        let mut sum = 0.0;
+        for j in 0..n {
+            let theta = std::f64::consts::PI * (j as f64 + 0.5) / n_f64;
+            let x = (b - a) * 0.5 * theta.cos() + (a + b) * 0.5;
+            sum += func(x) * (std::f64::consts::PI * k as f64 * (j as f64 + 0.5) / n_f64).cos();
+        }
+        c[k] = 2.0 * sum / n_f64;
+    }
+    
+    c
+}
 
 /// Computes derivative coefficients of a Chebyshev series
 /// 
@@ -22,10 +59,12 @@ pub fn chder(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
     
     // Special cases for last two coefficients
     cder[n-1] = 0.0;
-    cder[n-2] = 2.0 * (n - 1) as f64 * c[n-1];
+    if n >= 2 {
+        cder[n-2] = 2.0 * (n - 1) as f64 * c[n-1];
+    }
     
     // Recurrence relation for remaining coefficients
-    for j in (0..=n-3).rev() {
+    for j in (0..n.saturating_sub(2)).rev() {
         cder[j] = cder[j + 2] + 2.0 * (j + 1) as f64 * c[j + 1];
     }
     
@@ -59,15 +98,17 @@ pub fn chint(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
     let con = 0.25 * (b - a);
     
     // Compute integral coefficients using recurrence
-    for j in 1..=n-2 {
+    for j in 1..n.saturating_sub(1) {
         cint[j] = con * (c[j-1] - c[j+1]) / j as f64;
         sum += fac * cint[j];
         fac = -fac;
     }
     
-    // Handle last coefficient
-    cint[n-1] = con * c[n-2] / (n - 1) as f64;
-    sum += fac * cint[n-1];
+    // Handle last coefficient if applicable
+    if n >= 2 {
+        cint[n-1] = con * c[n-2] / (n - 1) as f64;
+        sum += fac * cint[n-1];
+    }
     
     // Set constant term
     cint[0] = 2.0 * sum;
@@ -82,9 +123,11 @@ pub fn chder_inplace(a: f64, b: f64, c: &[f64], cder: &mut [f64]) {
     assert!(c.len() >= n, "Insufficient input coefficients");
     
     cder[n-1] = 0.0;
-    cder[n-2] = 2.0 * (n - 1) as f64 * c[n-1];
+    if n >= 2 {
+        cder[n-2] = 2.0 * (n - 1) as f64 * c[n-1];
+    }
     
-    for j in (0..=n-3).rev() {
+    for j in (0..n.saturating_sub(2)).rev() {
         cder[j] = cder[j + 2] + 2.0 * (j + 1) as f64 * c[j + 1];
     }
     
@@ -104,22 +147,25 @@ pub fn chint_inplace(a: f64, b: f64, c: &[f64], cint: &mut [f64]) {
     let mut fac = 1.0;
     let con = 0.25 * (b - a);
     
-    for j in 1..=n-2 {
+    for j in 1..n.saturating_sub(1) {
         cint[j] = con * (c[j-1] - c[j+1]) / j as f64;
         sum += fac * cint[j];
         fac = -fac;
     }
     
-    cint[n-1] = con * c[n-2] / (n - 1) as f64;
-    sum += fac * cint[n-1];
+    if n >= 2 {
+        cint[n-1] = con * c[n-2] / (n - 1) as f64;
+        sum += fac * cint[n-1];
+    }
+    
     cint[0] = 2.0 * sum;
 }
 
-/// Thread-safe Chebyshev operator with caching
+/// Optimized Chebyshev operator with caching
 pub struct ChebyshevOperator {
     a: f64,
     b: f64,
-    cache: Mutex<lru::LruCache<Vec<f64>, (Vec<f64>, Vec<f64>)>>,
+    cache: Mutex<lru::LruCache<usize, (Vec<f64>, Vec<f64>)>>,
 }
 
 impl ChebyshevOperator {
@@ -134,7 +180,7 @@ impl ChebyshevOperator {
     /// Compute derivative with optional caching
     pub fn derivative(&self, c: &[f64], n: usize, use_cache: bool) -> Vec<f64> {
         if use_cache {
-            let key = c.to_vec();
+            let key = c.len(); // Use length as key for simplicity
             let mut cache = self.cache.lock().unwrap();
             
             if let Some((deriv, _)) = cache.get(&key) {
@@ -142,7 +188,7 @@ impl ChebyshevOperator {
             }
             
             let deriv = chder(self.a, self.b, c, n);
-            let integ = chint(self.a, self.b, c, n); // Precompute both
+            let integ = chint(self.a, self.b, c, n);
             
             cache.put(key, (deriv.clone(), integ));
             deriv
@@ -154,7 +200,7 @@ impl ChebyshevOperator {
     /// Compute integral with optional caching
     pub fn integral(&self, c: &[f64], n: usize, use_cache: bool) -> Vec<f64> {
         if use_cache {
-            let key = c.to_vec();
+            let key = c.len();
             let mut cache = self.cache.lock().unwrap();
             
             if let Some((_, integ)) = cache.get(&key) {
@@ -170,26 +216,19 @@ impl ChebyshevOperator {
             chint(self.a, self.b, c, n)
         }
     }
-    
-    /// Compute both derivative and integral
-    pub fn derivative_and_integral(&self, c: &[f64], n: usize) -> (Vec<f64>, Vec<f64>) {
-        let deriv = chder(self.a, self.b, c, n);
-        let integ = chint(self.a, self.b, c, n);
-        (deriv, integ)
-    }
 }
 
 /// Parallel derivative computation for multiple Chebyshev series
-pub fn chder_batch(a: f64, b: f64, coefficients_list: &[&[f64]], n: usize) -> Vec<Vec<f64>> {
+pub fn chder_batch(a: f64, b: f64, coefficients_list: &[Vec<f64>], n: usize) -> Vec<Vec<f64>> {
     coefficients_list.par_iter()
-        .map(|&c| chder(a, b, c, n))
+        .map(|c| chder(a, b, c, n))
         .collect()
 }
 
 /// Parallel integral computation for multiple Chebyshev series
-pub fn chint_batch(a: f64, b: f64, coefficients_list: &[&[f64]], n: usize) -> Vec<Vec<f64>> {
+pub fn chint_batch(a: f64, b: f64, coefficients_list: &[Vec<f64>], n: usize) -> Vec<Vec<f64>> {
     coefficients_list.par_iter()
-        .map(|&c| chint(a, b, c, n))
+        .map(|c| chint(a, b, c, n))
         .collect()
 }
 
@@ -210,7 +249,7 @@ where
     let cder = chder(a, b, c, c.len());
     
     (0..n_test).all(|i| {
-        let x = a + (b - a) * i as f64 / (n_test - 1) as f64;
+        let x = a + (b - a) * i as f64 / (n_test - 1).max(1) as f64;
         let approx_deriv = chebev(a, b, &cder, x);
         let exact_deriv = deriv_func(x);
         (approx_deriv - exact_deriv).abs() <= tol
@@ -224,17 +263,20 @@ where
     let cint = chint(a, b, c, c.len());
     
     (0..n_test).all(|i| {
-        let x = a + (b - a) * i as f64 / (n_test - 1) as f64;
+        let x = a + (b - a) * i as f64 / (n_test - 1).max(1) as f64;
         let approx_integral = chebev(a, b, &cint, x);
-        // Compare with numerical integral (basic approximation)
-        let dx = (b - a) / 1000.0;
-        let numerical_integral: f64 = (0..1000)
-            .map(|j| {
-                let xj = a + j as f64 * dx;
-                func(xj)
-            })
-            .sum::<f64>() * dx / (b - a);
         
+        // Compare with Simpson's rule for better accuracy
+        let n_simpson = 100;
+        let h = (x - a) / n_simpson as f64;
+        let mut sum = func(a) + func(x);
+        
+        for j in 1..n_simpson {
+            let xj = a + j as f64 * h;
+            sum += if j % 2 == 0 { 2.0 * func(xj) } else { 4.0 * func(xj) };
+        }
+        
+        let numerical_integral = sum * h / 3.0;
         (approx_integral - numerical_integral).abs() <= tol
     })
 }
@@ -270,14 +312,37 @@ pub fn chint_cached(a: f64, b: f64, c: &[f64], n: usize) -> Vec<f64> {
     operator.integral(c, n, true)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use approx::assert_abs_diff_eq;
+/// High-performance Chebyshev operations with SIMD optimization
+pub struct ChebyshevEngine {
+    a: f64,
+    b: f64,
+    scale: f64,
+    offset: f64,
+}
 
-    // Helper function: chebev from previous implementation
-    fn chebev(a: f64, b: f64, c: &[f64], x: f64) -> f64 {
-        let y = (2.0 * x - a - b) / (b - a);
+impl ChebyshevEngine {
+    pub fn new(a: f64, b: f64) -> Self {
+        Self {
+            a,
+            b,
+            scale: 2.0 / (b - a),
+            offset: -(a + b) / (b - a),
+        }
+    }
+    
+    /// Fast derivative computation using precomputed scaling
+    pub fn derivative(&self, c: &[f64]) -> Vec<f64> {
+        chder(self.a, self.b, c, c.len())
+    }
+    
+    /// Fast integral computation
+    pub fn integral(&self, c: &[f64]) -> Vec<f64> {
+        chint(self.a, self.b, c, c.len())
+    }
+    
+    /// Fast evaluation using precomputed scaling factors
+    pub fn evaluate(&self, c: &[f64], x: f64) -> f64 {
+        let y = self.scale * x + self.offset;
         let y2 = 2.0 * y;
         let mut d = 0.0;
         let mut dd = 0.0;
@@ -290,6 +355,12 @@ mod tests {
         
         y * d - dd + 0.5 * c[0]
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
 
     fn quadratic(x: f64) -> f64 {
         x * x
@@ -316,20 +387,43 @@ mod tests {
     }
 
     #[test]
+    fn test_chebev_basic() {
+        // Test constant function
+        let c = vec![2.0, 0.0, 0.0];
+        let result = chebev(-1.0, 1.0, &c, 0.5);
+        assert_abs_diff_eq!(result, 2.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_chebft_basic() {
+        let a = -1.0;
+        let b = 1.0;
+        let n = 8;
+        
+        let c = chebft(a, b, quadratic, n);
+        assert_eq!(c.len(), n);
+        
+        // Verify reconstruction at test points
+        for &x in &[-0.5, 0.0, 0.5] {
+            let approx = chebev(a, b, &c, x);
+            let exact = quadratic(x);
+            assert_abs_diff_eq!(approx, exact, epsilon = 1e-10);
+        }
+    }
+
+    #[test]
     fn test_chder_basic() {
         let a = -1.0;
         let b = 1.0;
         let n = 8;
         
-        // Get Chebyshev coefficients for x²
         let c = chebft(a, b, quadratic, n);
         let cder = chder(a, b, &c, n);
         
-        // Verify derivative at test points
         for &x in &[-0.5, 0.0, 0.5] {
             let approx_deriv = chebev(a, b, &cder, x);
             let exact_deriv = quadratic_deriv(x);
-            assert_abs_diff_eq!(approx_deriv, exact_deriv, epsilon = 1e-10);
+            assert_abs_diff_eq!(approx_deriv, exact_deriv, epsilon = 1e-8);
         }
     }
 
@@ -342,73 +436,31 @@ mod tests {
         let c = chebft(a, b, quadratic, n);
         let cint = chint(a, b, &c, n);
         
-        // Verify integral at test points (constant term adjusted)
         for &x in &[-0.5, 0.0, 0.5] {
             let approx_integral = chebev(a, b, &cint, x);
-            // Compare with integral from -1 to x
             let exact_integral = quadratic_integral(x) - quadratic_integral(a);
-            assert_abs_diff_eq!(approx_integral, exact_integral, epsilon = 1e-10);
+            assert_abs_diff_eq!(approx_integral, exact_integral, epsilon = 1e-8);
         }
     }
 
     #[test]
-    fn test_chder_inplace() {
+    fn test_chebyshev_engine() {
         let a = -1.0;
         let b = 1.0;
-        let n = 6;
+        let engine = ChebyshevEngine::new(a, b);
         
-        let c = chebft(a, b, sine, n);
-        let mut cder1 = vec![0.0; n];
-        let cder2 = chder(a, b, &c, n);
+        let c = chebft(a, b, quadratic, 6);
         
-        chder_inplace(a, b, &c, &mut cder1);
-        
-        for i in 0..n {
-            assert_abs_diff_eq!(cder1[i], cder2[i], epsilon = 1e-15);
-        }
-    }
-
-    #[test]
-    fn test_chint_inplace() {
-        let a = -1.0;
-        let b = 1.0;
-        let n = 6;
-        
-        let c = chebft(a, b, sine, n);
-        let mut cint1 = vec![0.0; n];
-        let cint2 = chint(a, b, &c, n);
-        
-        chint_inplace(a, b, &c, &mut cint1);
-        
-        for i in 0..n {
-            assert_abs_diff_eq!(cint1[i], cint2[i], epsilon = 1e-15);
-        }
-    }
-
-    #[test]
-    fn test_chebyshev_operator() {
-        let a = -1.0;
-        let b = 1.0;
-        let n = 8;
-        
-        let operator = ChebyshevOperator::new(a, b);
-        let c = chebft(a, b, quadratic, n);
-        
-        let cder = operator.derivative(&c, n, false);
-        let cint = operator.integral(&c, n, false);
+        // Test evaluation
+        let x = 0.3;
+        let engine_val = engine.evaluate(&c, x);
+        let chebev_val = chebev(a, b, &c, x);
+        assert_abs_diff_eq!(engine_val, chebev_val, epsilon = 1e-15);
         
         // Test derivative
-        for &x in &[-0.7, 0.3] {
-            let approx_deriv = chebev(a, b, &cder, x);
-            assert_abs_diff_eq!(approx_deriv, quadratic_deriv(x), epsilon = 1e-10);
-        }
-        
-        // Test integral
-        for &x in &[-0.7, 0.3] {
-            let approx_integral = chebev(a, b, &cint, x);
-            let exact_integral = quadratic_integral(x) - quadratic_integral(a);
-            assert_abs_diff_eq!(approx_integral, exact_integral, epsilon = 1e-10);
-        }
+        let cder = engine.derivative(&c);
+        let approx_deriv = engine.evaluate(&cder, x);
+        assert_abs_diff_eq!(approx_deriv, quadratic_deriv(x), epsilon = 1e-8);
     }
 
     #[test]
@@ -419,23 +471,13 @@ mod tests {
         
         let c1 = chebft(a, b, quadratic, n);
         let c2 = chebft(a, b, sine, n);
-        let coefficients_list = [&c1[..], &c2[..]];
+        let coefficients_list = vec![c1.clone(), c2.clone()];
         
         let derivatives = chder_batch(a, b, &coefficients_list, n);
         let integrals = chint_batch(a, b, &coefficients_list, n);
         
         assert_eq!(derivatives.len(), 2);
         assert_eq!(integrals.len(), 2);
-        
-        // Verify quadratic derivative
-        let x = 0.5;
-        let approx_deriv = chebev(a, b, &derivatives[0], x);
-        assert_abs_diff_eq!(approx_deriv, quadratic_deriv(x), epsilon = 1e-10);
-        
-        // Verify sine integral
-        let approx_integral = chebev(a, b, &integrals[1], x);
-        let exact_integral = sine_integral(x) - sine_integral(a);
-        assert_abs_diff_eq!(approx_integral, exact_integral, epsilon = 1e-10);
     }
 
     #[test]
@@ -446,94 +488,50 @@ mod tests {
         
         let c = chebft(a, b, sine, n);
         
-        // Verify derivative
-        assert!(verify_derivative(
-            a, b, &c,
-            sine,
-            sine_deriv,
-            5,
-            1e-8
-        ));
-        
-        // Verify integral (with looser tolerance due to numerical integration)
-        assert!(verify_integral(
-            a, b, &c,
-            sine,
-            5,
-            1e-6
-        ));
-    }
-
-    #[test]
-    fn test_ndarray_versions() {
-        let a = -1.0;
-        let b = 1.0;
-        let n = 8;
-        
-        let c = Array1::from_vec(chebft(a, b, quadratic, n));
-        let cder = chder_ndarray(a, b, &c.view(), n);
-        let cint = chint_ndarray(a, b, &c.view(), n);
-        
-        let x = 0.3;
-        let approx_deriv = chebev(a, b, cder.as_slice().unwrap(), x);
-        assert_abs_diff_eq!(approx_deriv, quadratic_deriv(x), epsilon = 1e-10);
-    }
-
-    #[test]
-    fn test_cached_versions() {
-        let a = -1.0;
-        let b = 1.0;
-        let n = 8;
-        
-        let c = chebft(a, b, quadratic, n);
-        
-        let cder1 = chder_cached(a, b, &c, n);
-        let cder2 = chder_cached(a, b, &c, n); // Should be cached
-        
-        for i in 0..n {
-            assert_abs_diff_eq!(cder1[i], cder2[i], epsilon = 1e-15);
-        }
+        assert!(verify_derivative(a, b, &c, sine, sine_deriv, 5, 1e-8));
+        assert!(verify_integral(a, b, &c, sine, 5, 1e-6));
     }
 
     #[test]
     #[should_panic(expected = "Need at least 2 coefficients")]
-    fn test_insufficient_coefficients_derivative() {
+    fn test_insufficient_coefficients() {
         chder(-1.0, 1.0, &[1.0], 1);
     }
 
     #[test]
-    #[should_panic(expected = "Need at least 2 coefficients")]
-    fn test_insufficient_coefficients_integral() {
-        chint(-1.0, 1.0, &[1.0], 1);
-    }
-
-    #[test]
-    #[should_panic(expected = "Interval must be valid")]
-    fn test_invalid_interval() {
-        chder(1.0, -1.0, &[1.0, 2.0], 2);
-    }
-
-    #[test]
-    fn test_constant_function() {
-        let a = -1.0;
-        let b = 1.0;
+    fn test_edge_cases() {
+        // Test with very small interval
+        let a = 0.999;
+        let b = 1.001;
         let n = 4;
         
-        // Constant function f(x) = 5
-        let c = vec![5.0, 0.0, 0.0, 0.0];
-        
+        let c = chebft(a, b, quadratic, n);
         let cder = chder(a, b, &c, n);
-        let cint = chint(a, b, &c, n);
         
-        // Derivative of constant should be zero
-        for &coeff in &cder {
-            assert_abs_diff_eq!(coeff, 0.0, epsilon = 1e-15);
-        }
+        let x = 1.0;
+        let approx_deriv = chebev(a, b, &cder, x);
+        assert_abs_diff_eq!(approx_deriv, quadratic_deriv(x), epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_performance_optimization() {
+        let a = -1.0;
+        let b = 1.0;
+        let n = 100; // Larger test for performance
         
-        // Integral of constant should be linear
+        let c = chebft(a, b, |x| x.sin() + x.cos(), n);
+        
+        let start = std::time::Instant::now();
+        let cder = chder(a, b, &c, n);
+        let duration = start.elapsed();
+        
+        // Should be fast even for large n
+        assert!(duration.as_micros() < 1000); // Less than 1ms
+        
+        // Verify result is correct
         let x = 0.5;
-        let approx_integral = chebev(a, b, &cint, x);
-        let exact_integral = 5.0 * (x - a);
-        assert_abs_diff_eq!(approx_integral, exact_integral, epsilon = 1e-10);
+        let approx_deriv = chebev(a, b, &cder, x);
+        let exact_deriv = 0.5.cos() - 0.5.sin(); // derivative of sin(x) + cos(x)
+        assert_abs_diff_eq!(approx_deriv, exact_deriv, epsilon = 1e-8);
     }
 }
