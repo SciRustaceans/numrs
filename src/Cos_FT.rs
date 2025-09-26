@@ -1,4 +1,5 @@
 use std::f64::consts::PI;
+use std::sync::atomic::Ordering;
 use rayon::prelude::*;
 
 /// Fast Cosine Transform implementation

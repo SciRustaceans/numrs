@@ -2,6 +2,65 @@ use std::f64::consts;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+/// Trait for floating-point types that can be used in Bessel function computations
+pub trait BesselFloat: Copy + PartialOrd + PartialEq + std::fmt::Debug {
+    /// Returns the zero value
+    fn zero() -> Self;
+    /// Returns the one value
+    fn one() -> Self;
+    /// Returns the value from an f64
+    fn from_f64(x: f64) -> Self;
+    /// Returns the value from an i32
+    fn from_i32(x: i32) -> Self;
+    /// Returns the absolute value
+    fn abs(self) -> Self;
+    /// Returns the square root
+    fn sqrt(self) -> Self;
+    /// Returns the natural logarithm
+    fn ln(self) -> Self;
+    /// Returns the exponential
+    fn exp(self) -> Self;
+    /// Raises to a power (integer)
+    fn powi(self, n: i32) -> Self;
+    /// Raises to a power (floating-point)
+    fn powf(self, n: Self) -> Self;
+    /// Returns the reciprocal
+    fn recip(self) -> Self;
+}
+
+impl BesselFloat for f64 {
+    fn zero() -> Self { 0.0 }
+    fn one() -> Self { 1.0 }
+    fn from_f64(x: f64) -> Self { x }
+    fn from_i32(x: i32) -> Self { x as f64 }
+    fn abs(self) -> Self { self.abs() }
+    fn sqrt(self) -> Self { self.sqrt() }
+    fn ln(self) -> Self { self.ln() }
+    fn exp(self) -> Self { self.exp() }
+    fn powi(self, n: i32) -> Self { self.powi(n) }
+    fn powf(self, n: Self) -> Self { self.powf(n) }
+    fn recip(self) -> Self { self.recip() }
+}
+
+impl BesselFloat for f32 {
+    fn zero() -> Self { 0.0 }
+    fn one() -> Self { 1.0 }
+    fn from_f64(x: f64) -> Self { x as f32 }
+    fn from_i32(x: i32) -> Self { x as f32 }
+    fn abs(self) -> Self { self.abs() }
+    fn sqrt(self) -> Self { self.sqrt() }
+    fn ln(self) -> Self { self.ln() }
+    fn exp(self) -> Self { self.exp() }
+    fn powi(self, n: i32) -> Self { self.powi(n) }
+    fn powf(self, n: Self) -> Self { self.powf(n) }
+    fn recip(self) -> Self { self.recip() }
+}
+
+/// Evaluates a polynomial using Horner's method
+fn polynomial_eval<T: BesselFloat>(x: T, coeffs: &[T]) -> T {
+    coeffs.iter().rev().fold(T::zero(), |acc, &c| acc * x + c)
+}
+
 /// Computes the modified Bessel function of the second kind K₀(x)
 /// Supports both f32 and f64 precision through generics
 pub fn bessk0<T>(x: T) -> T
@@ -12,42 +71,42 @@ where
         panic!("bessk0: x must be positive");
     }
 
-    if x <= T::from_f64(2.0).unwrap() {
+    if x <= T::from_f64(2.0) {
         // Series expansion for small x
-        let y = x * x / T::from_f64(4.0).unwrap();
+        let y = x * x / T::from_f64(4.0);
         let i0 = bessi0(x);
         
         // Polynomial coefficients for the series expansion
         let poly = polynomial_eval(
             y,
             &[
-                T::from_f64(0.0).unwrap(),
-                T::from_f64(0.74e-5).unwrap(),
-                T::from_f64(0.10750e-3).unwrap(),
-                T::from_f64(0.262698e-2).unwrap(),
-                T::from_f64(0.3488590e-1).unwrap(),
-                T::from_f64(0.23069756).unwrap(),
-                T::from_f64(0.4278420).unwrap(),
-                T::from_f64(-0.57721566).unwrap(),
+                T::from_f64(0.0),
+                T::from_f64(0.74e-5),
+                T::from_f64(0.10750e-3),
+                T::from_f64(0.262698e-2),
+                T::from_f64(0.3488590e-1),
+                T::from_f64(0.23069756),
+                T::from_f64(0.4278420),
+                T::from_f64(-0.57721566),
             ],
         );
         
-        -((x / T::from_f64(2.0).unwrap()).ln() * i0) + poly
+        -((x / T::from_f64(2.0)).ln() * i0) + poly
     } else {
         // Asymptotic expansion for large x
-        let y = T::from_f64(2.0).unwrap() / x;
+        let y = T::from_f64(2.0) / x;
         
         // Polynomial coefficients for the asymptotic expansion
         let poly = polynomial_eval(
             y,
             &[
-                T::from_f64(1.25331414).unwrap(),
-                T::from_f64(-0.7832358e-1).unwrap(),
-                T::from_f64(0.2189568e-1).unwrap(),
-                T::from_f64(-0.1062446e-1).unwrap(),
-                T::from_f64(0.587872e-2).unwrap(),
-                T::from_f64(-0.251540e-2).unwrap(),
-                T::from_f64(0.53208e-3).unwrap(),
+                T::from_f64(1.25331414),
+                T::from_f64(-0.7832358e-1),
+                T::from_f64(0.2189568e-1),
+                T::from_f64(-0.1062446e-1),
+                T::from_f64(0.587872e-2),
+                T::from_f64(-0.251540e-2),
+                T::from_f64(0.53208e-3),
             ],
         );
         
@@ -62,34 +121,34 @@ where
 {
     let ax = x.abs();
     
-    if ax < T::from_f64(3.75).unwrap() {
-        let y = (x / T::from_f64(3.75).unwrap()).powi(2);
+    if ax < T::from_f64(3.75) {
+        let y = (x / T::from_f64(3.75)).powi(2);
         polynomial_eval(
             y,
             &[
-                T::from_f64(1.0).unwrap(),
-                T::from_f64(3.5156229).unwrap(),
-                T::from_f64(3.0899424).unwrap(),
-                T::from_f64(1.2067492).unwrap(),
-                T::from_f64(0.2659732).unwrap(),
-                T::from_f64(0.360768e-1).unwrap(),
-                T::from_f64(0.45813e-2).unwrap(),
+                T::from_f64(1.0),
+                T::from_f64(3.5156229),
+                T::from_f64(3.0899424),
+                T::from_f64(1.2067492),
+                T::from_f64(0.2659732),
+                T::from_f64(0.360768e-1),
+                T::from_f64(0.45813e-2),
             ],
         )
     } else {
-        let y = T::from_f64(3.75).unwrap() / ax;
+        let y = T::from_f64(3.75) / ax;
         polynomial_eval(
             y,
             &[
-                T::from_f64(0.39894228).unwrap(),
-                T::from_f64(0.1328592e-1).unwrap(),
-                T::from_f64(0.225319e-2).unwrap(),
-                T::from_f64(-0.157565e-2).unwrap(),
-                T::from_f64(0.916281e-2).unwrap(),
-                T::from_f64(-0.2057706e-1).unwrap(),
-                T::from_f64(0.2635537e-1).unwrap(),
-                T::from_f64(-0.1647633e-1).unwrap(),
-                T::from_f64(0.392377e-2).unwrap(),
+                T::from_f64(0.39894228),
+                T::from_f64(0.1328592e-1),
+                T::from_f64(0.225319e-2),
+                T::from_f64(-0.157565e-2),
+                T::from_f64(0.916281e-2),
+                T::from_f64(-0.2057706e-1),
+                T::from_f64(0.2635537e-1),
+                T::from_f64(-0.1647633e-1),
+                T::from_f64(0.392377e-2),
             ],
         ) * ax.exp() / ax.sqrt()
     }
@@ -102,34 +161,34 @@ where
 {
     let ax = x.abs();
     
-    if ax < T::from_f64(3.75).unwrap() {
-        let y = (x / T::from_f64(3.75).unwrap()).powi(2);
+    if ax < T::from_f64(3.75) {
+        let y = (x / T::from_f64(3.75)).powi(2);
         x * polynomial_eval(
             y,
             &[
-                T::from_f64(0.5).unwrap(),
-                T::from_f64(0.87890594).unwrap(),
-                T::from_f64(0.51498869).unwrap(),
-                T::from_f64(0.15084934).unwrap(),
-                T::from_f64(0.2658733e-1).unwrap(),
-                T::from_f64(0.301532e-2).unwrap(),
-                T::from_f64(0.32411e-3).unwrap(),
+                T::from_f64(0.5),
+                T::from_f64(0.87890594),
+                T::from_f64(0.51498869),
+                T::from_f64(0.15084934),
+                T::from_f64(0.2658733e-1),
+                T::from_f64(0.301532e-2),
+                T::from_f64(0.32411e-3),
             ],
         )
     } else {
-        let y = T::from_f64(3.75).unwrap() / ax;
+        let y = T::from_f64(3.75) / ax;
         let result = polynomial_eval(
             y,
             &[
-                T::from_f64(0.39894228).unwrap(),
-                T::from_f64(-0.3988024e-1).unwrap(),
-                T::from_f64(-0.362018e-2).unwrap(),
-                T::from_f64(0.163801e-2).unwrap(),
-                T::from_f64(-0.1031555e-1).unwrap(),
-                T::from_f64(0.2282967e-1).unwrap(),
-                T::from_f64(-0.2895312e-1).unwrap(),
-                T::from_f64(0.1787654e-1).unwrap(),
-                T::from_f64(-0.420059e-2).unwrap(),
+                T::from_f64(0.39894228),
+                T::from_f64(-0.3988024e-1),
+                T::from_f64(-0.362018e-2),
+                T::from_f64(0.163801e-2),
+                T::from_f64(-0.1031555e-1),
+                T::from_f64(0.2282967e-1),
+                T::from_f64(-0.2895312e-1),
+                T::from_f64(0.1787654e-1),
+                T::from_f64(-0.420059e-2),
             ],
         ) * ax.exp() / ax.sqrt();
         
@@ -150,37 +209,37 @@ where
         panic!("bessk1: x must be positive");
     }
 
-    if x <= T::from_f64(2.0).unwrap() {
-        let y = x * x / T::from_f64(4.0).unwrap();
+    if x <= T::from_f64(2.0) {
+        let y = x * x / T::from_f64(4.0);
         let i1 = bessi1(x);
         
         let poly = polynomial_eval(
             y,
             &[
-                T::from_f64(1.0).unwrap(),
-                T::from_f64(0.15443144).unwrap(),
-                T::from_f64(-0.67278579).unwrap(),
-                T::from_f64(-0.18156897).unwrap(),
-                T::from_f64(-0.1919402e-1).unwrap(),
-                T::from_f64(-0.110404e-2).unwrap(),
-                T::from_f64(-0.4686e-4).unwrap(),
+                T::from_f64(1.0),
+                T::from_f64(0.15443144),
+                T::from_f64(-0.67278579),
+                T::from_f64(-0.18156897),
+                T::from_f64(-0.1919402e-1),
+                T::from_f64(-0.110404e-2),
+                T::from_f64(-0.4686e-4),
             ],
         );
         
-        (x / T::from_f64(2.0).unwrap()).ln() * i1 + (T::one() / x) * poly
+        (x / T::from_f64(2.0)).ln() * i1 + (T::one() / x) * poly
     } else {
-        let y = T::from_f64(2.0).unwrap() / x;
+        let y = T::from_f64(2.0) / x;
         
         let poly = polynomial_eval(
             y,
             &[
-                T::from_f64(1.25331414).unwrap(),
-                T::from_f64(0.23498619).unwrap(),
-                T::from_f64(-0.3655620e-1).unwrap(),
-                T::from_f64(0.1504268e-1).unwrap(),
-                T::from_f64(-0.780353e-2).unwrap(),
-                T::from_f64(0.325614e-2).unwrap(),
-                T::from_f64(-0.68245e-3).unwrap(),
+                T::from_f64(1.25331414),
+                T::from_f64(0.23498619),
+                T::from_f64(-0.3655620e-1),
+                T::from_f64(0.1504268e-1),
+                T::from_f64(-0.780353e-2),
+                T::from_f64(0.325614e-2),
+                T::from_f64(-0.68245e-3),
             ],
         );
         
@@ -205,12 +264,12 @@ where
         1 => bessk1(x),
         _ => {
             // Use recurrence relation for higher orders
-            let tox = T::from_f64(2.0).unwrap() / x;
+            let tox = T::from_f64(2.0) / x;
             let mut bkm = bessk0(x);
             let mut bk = bessk1(x);
             
             for k in 1..n {
-                let bkp = bkm + T::from_i32(k).unwrap() * tox * bk;
+                let bkp = bkm + T::from_i32(k) * tox * bk;
                 bkm = bk;
                 bk = bkp;
             }
@@ -258,6 +317,20 @@ where
         .unwrap()
         .into_inner()
         .unwrap()
+}
+
+/// Parallel computation using rayon for better performance
+#[cfg(feature = "parallel")]
+pub fn bessk_parallel<T>(orders: &[i32], x: T) -> Vec<T>
+where
+    T: BesselFloat + Send + Sync + 'static,
+{
+    use rayon::prelude::*;
+    
+    orders
+        .par_iter()
+        .map(|&n| bessk(n, x))
+        .collect()
 }
 
 #[cfg(test)]

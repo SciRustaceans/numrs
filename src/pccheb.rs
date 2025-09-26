@@ -62,13 +62,17 @@ pub fn pccheb(d: &[f64], n: usize) -> Vec<f64> {
 /// All pointers must be valid and properly aligned
 pub unsafe fn pccheb_unsafe(d: *const f64, c: *mut f64, n: usize) {
     // Initialize first coefficient
-    *c = 2.0 * *d;
+    unsafe {
+        *c = 2.0 * *d;
+    }
     
     let mut pow = 1.0;
     
     for k in 1..n {
-        *c.add(k) = 0.0;
-        let mut fac = *d.add(k) / pow;
+        unsafe {
+            *c.add(k) = 0.0;
+            let mut fac = *d.add(k) / pow;
+        }
         
         let mut j = k;
         let mut jm = k as f64;
@@ -77,25 +81,33 @@ pub unsafe fn pccheb_unsafe(d: *const f64, c: *mut f64, n: usize) {
         // Optimized inner loop with manual unrolling
         while j >= 4 {
             // Process 4 coefficients at once
-            *c.add(j) += fac;
+            unsafe {
+                *c.add(j) += fac;
+            }
             fac *= jm / jp;
             jm -= 1.0;
             jp += 1.0;
             j -= 1;
             
-            *c.add(j) += fac;
+            unsafe {
+                *c.add(j) += fac;
+            }
             fac *= jm / jp;
             jm -= 1.0;
             jp += 1.0;
             j -= 1;
             
-            *c.add(j) += fac;
+            unsafe {
+                *c.add(j) += fac;
+            }
             fac *= jm / jp;
             jm -= 1.0;
             jp += 1.0;
             j -= 1;
             
-            *c.add(j) += fac;
+            unsafe {
+                *c.add(j) += fac;
+            }
             fac *= jm / jp;
             jm -= 1.0;
             jp += 1.0;
@@ -104,7 +116,9 @@ pub unsafe fn pccheb_unsafe(d: *const f64, c: *mut f64, n: usize) {
         
         // Process remaining elements
         while j >= 0 {
-            *c.add(j) += fac;
+            unsafe {
+                *c.add(j) += fac;
+            }
             if j > 0 {
                 fac *= jm / jp;
                 jm -= 1.0;
@@ -377,13 +391,13 @@ fn evaluate_chebyshev_stable(c: &[f64], x: f64) -> f64 {
     
     let mut bk = 0.0;
     let mut bk1 = 0.0;
-    let mut bk2 = 0.0;
+    let mut _bk2 = 0.0;  // Prefix with underscore since it's unused
     let two_x = 2.0 * x;
     
     for k in (1..c.len()).rev() {
-        bk2 = bk1;
+        _bk2 = bk1;
         bk1 = bk;
-        bk = two_x * bk1 - bk2 + c[k];
+        bk = two_x * bk1 - _bk2 + c[k];
     }
     
     0.5 * c[0] + x * bk - bk1

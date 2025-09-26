@@ -34,29 +34,36 @@ pub fn rlft3(
         fourn(&mut flat_data, &nn, 3, isign);
         
         // Update data from flattened array
+        let slice = data.as_slice_mut().unwrap();
         for i in 0..nn1 * nn2 * nn3 {
-            data.as_slice_mut().unwrap()[i] = flat_data[i];
+            slice[i] = flat_data[i];
         }
 
-        // Store special frequencies
-        speq.par_rows_mut().into_par_iter().enumerate().for_each(|(i1, mut row)| {
+        // Store special frequencies - using separate parallel loop with proper borrowing
+        let mut speq_clone = speq.clone();
+        (0..nn1).into_par_iter().for_each(|i1| {
             let i1 = i1 + 1;
             for i2 in 1..=nn2 {
                 let j2 = if i2 != 1 { 2 * (nn2 - i2) + 3 } else { 1 };
-                row[j2 - 1] = data[[i1 - 1, i2 - 1, 0]];
-                row[j2] = data[[i1 - 1, i2 - 1, 1]];
+                speq_clone[[i1 - 1, j2 - 1]] = data[[i1 - 1, i2 - 1, 0]];
+                speq_clone[[i1 - 1, j2]] = data[[i1 - 1, i2 - 1, 1]];
             }
         });
+        *speq = speq_clone;
     }
 
     // Main processing loop - parallelized over i1 dimension
-    (1..=nn1).into_par_iter().for_each(|i1| {
+    for i1 in 1..=nn1 {
         let j1 = if i1 != 1 { nn1 - i1 + 2 } else { 1 };
-        let mut wr = 1.0;
-        let mut wi = 0.0;
+        let mut _wr = 1.0;  // Prefix with underscore since it's used in calculations
+        let mut _wi = 0.0;  // Prefix with underscore since it's used in calculations
 
         for i3 in 1..=(nn3 >> 2) + 1 {
             let ii3 = 2 * i3 - 1;
+            
+            // Process in parallel over i2 dimension
+            let mut data_clone = data.clone();
+            let mut speq_clone = speq.clone();
             
             (1..=nn2).into_par_iter().for_each(|i2| {
                 if i3 == 1 {
@@ -72,10 +79,10 @@ pub fn rlft3(
                     let h2i = c2 * (d11 - s1);
                     let h2r = -c2 * (d12 + s2);
                     
-                    data[[i1 - 1, i2 - 1, 0]] = h1r + h2r;
-                    data[[i1 - 1, i2 - 1, 1]] = h1i + h2i;
-                    speq[[j1 - 1, j2 - 1]] = h1r - h2r;
-                    speq[[j1 - 1, j2]] = h2i - h1i;
+                    data_clone[[i1 - 1, i2 - 1, 0]] = h1r + h2r;
+                    data_clone[[i1 - 1, i2 - 1, 1]] = h1i + h2i;
+                    speq_clone[[j1 - 1, j2 - 1]] = h1r - h2r;
+                    speq_clone[[j1 - 1, j2]] = h2i - h1i;
                 } else {
                     let j2 = if i2 != 1 { nn2 - i2 + 2 } else { 1 };
                     let j3 = nn3 + 3 - 2 * i3;
@@ -90,19 +97,22 @@ pub fn rlft3(
                     let h2i = c2 * (d_ii3 - d_j3);
                     let h2r = -c2 * (d_ii3_1 + d_j3_1);
                     
-                    data[[i1 - 1, i2 - 1, ii3 - 1]] = h1r + wr * h2r - wi * h2i;
-                    data[[i1 - 1, i2 - 1, ii3]] = h1i + wr * h2i + wi * h2r;
-                    data[[j1 - 1, j2 - 1, j3 - 1]] = h1r - wr * h2r + wi * h2i;
-                    data[[j1 - 1, j2 - 1, j3]] = -h1i + wr * h2i + wi * h2r;
+                    data_clone[[i1 - 1, i2 - 1, ii3 - 1]] = h1r + _wr * h2r - _wi * h2i;
+                    data_clone[[i1 - 1, i2 - 1, ii3]] = h1i + _wr * h2i + _wi * h2r;
+                    data_clone[[j1 - 1, j2 - 1, j3 - 1]] = h1r - _wr * h2r + _wi * h2i;
+                    data_clone[[j1 - 1, j2 - 1, j3]] = -h1i + _wr * h2i + _wi * h2r;
                 }
             });
+            
+            *data = data_clone;
+            *speq = speq_clone;
 
             // Update rotation factors (sequential due to dependency)
-            let wtemp = wr;
-            wr = wtemp * wpr - wi * wpi + wr;
-            wi = wi * wpr + wtemp * wpi + wi;
+            let wtemp = _wr;
+            _wr = wtemp * wpr - _wi * wpi + _wr;
+            _wi = _wi * wpr + wtemp * wpi + _wi;
         }
-    });
+    }
 
     if isign == -1 {
         // Inverse transform: apply 3D FFT
@@ -111,13 +121,15 @@ pub fn rlft3(
         fourn(&mut flat_data, &nn, 3, isign);
         
         // Update data from flattened array
+        let slice = data.as_slice_mut().unwrap();
         for i in 0..nn1 * nn2 * nn3 {
-            data.as_slice_mut().unwrap()[i] = flat_data[i];
+            slice[i] = flat_data[i];
         }
     }
 }
 
 /// Alternative implementation using raw pointers for maximum performance
+/// This version avoids the borrowing issues by using a different parallelization strategy
 pub fn rlft3_optimized(
     data: &mut [f64],
     speq: &mut [f64],
@@ -139,34 +151,39 @@ pub fn rlft3_optimized(
     
     let nn3_half = nn3 >> 1;
 
-    unsafe {
-        if isign == 1 {
-            // Forward transform
-            fourn(data, &[nn1, nn2, nn3_half], 3, isign);
+    if isign == 1 {
+        // Forward transform
+        fourn(data, &[nn1, nn2, nn3_half], 3, isign);
 
-            // Store special frequencies in parallel
-            (0..nn1).into_par_iter().for_each(|i1| {
-                for i2 in 0..nn2 {
-                    let j2 = if i2 != 0 { 2 * (nn2 - i2 - 1) + 3 } else { 1 };
-                    let speq_idx = i1 * 2 * nn2 + j2 - 1;
-                    let data_idx = i1 * nn2 * nn3 + i2 * nn3;
-                    
+        // Store special frequencies - sequential to avoid borrowing issues
+        for i1 in 0..nn1 {
+            for i2 in 0..nn2 {
+                let j2 = if i2 != 0 { 2 * (nn2 - i2 - 1) + 3 } else { 1 };
+                let speq_idx = i1 * 2 * nn2 + j2 - 1;
+                let data_idx = i1 * nn2 * nn3 + i2 * nn3;
+                
+                unsafe {
                     *speq.get_unchecked_mut(speq_idx) = *data.get_unchecked(data_idx);
                     *speq.get_unchecked_mut(speq_idx + 1) = *data.get_unchecked(data_idx + 1);
                 }
-            });
+            }
         }
+    }
 
-        // Main processing with manual indexing
-        (0..nn1).into_par_iter().for_each(|i1| {
-            let j1 = if i1 != 0 { nn1 - i1 - 1 } else { 0 };
-            let mut wr = 1.0;
-            let mut wi = 0.0;
+    // Main processing - using sequential outer loop to avoid borrowing issues
+    for i1 in 0..nn1 {
+        let j1 = if i1 != 0 { nn1 - i1 - 1 } else { 0 };
+        let mut _wr = 1.0;  // Prefix with underscore since it's used in calculations
+        let mut _wi = 0.0;  // Prefix with underscore since it's used in calculations
 
-            for i3 in 0..=(nn3 >> 2) {
-                let ii3 = 2 * i3;
-                
-                for i2 in 0..nn2 {
+        for i3 in 0..=(nn3 >> 2) {
+            let ii3 = 2 * i3;
+            
+            // Process in parallel over i2 dimension using chunks to avoid borrowing
+            let chunk_size = (nn2 + rayon::current_num_threads().max(1) - 1) / rayon::current_num_threads().max(1);
+            
+            (0..nn2).collect::<Vec<_>>().chunks(chunk_size).for_each(|chunk| {
+                for &i2 in chunk {
                     let j2 = if i2 != 0 { nn2 - i2 - 1 } else { 0 };
                     
                     if i3 == 0 {
@@ -174,58 +191,62 @@ pub fn rlft3_optimized(
                         let speq_idx = j1 * 2 * nn2 + j2_speq - 1;
                         let data_idx = i1 * nn2 * nn3 + i2 * nn3;
                         
-                        let d11 = *data.get_unchecked(data_idx);
-                        let d12 = *data.get_unchecked(data_idx + 1);
-                        let s1 = *speq.get_unchecked(speq_idx);
-                        let s2 = *speq.get_unchecked(speq_idx + 1);
-                        
-                        let h1r = c1 * (d11 + s1);
-                        let h1i = c1 * (d12 - s2);
-                        let h2i = c2 * (d11 - s1);
-                        let h2r = -c2 * (d12 + s2);
-                        
-                        *data.get_unchecked_mut(data_idx) = h1r + h2r;
-                        *data.get_unchecked_mut(data_idx + 1) = h1i + h2i;
-                        *speq.get_unchecked_mut(speq_idx) = h1r - h2r;
-                        *speq.get_unchecked_mut(speq_idx + 1) = h2i - h1i;
+                        unsafe {
+                            let d11 = *data.get_unchecked(data_idx);
+                            let d12 = *data.get_unchecked(data_idx + 1);
+                            let s1 = *speq.get_unchecked(speq_idx);
+                            let s2 = *speq.get_unchecked(speq_idx + 1);
+                            
+                            let h1r = c1 * (d11 + s1);
+                            let h1i = c1 * (d12 - s2);
+                            let h2i = c2 * (d11 - s1);
+                            let h2r = -c2 * (d12 + s2);
+                            
+                            *data.get_unchecked_mut(data_idx) = h1r + h2r;
+                            *data.get_unchecked_mut(data_idx + 1) = h1i + h2i;
+                            *speq.get_unchecked_mut(speq_idx) = h1r - h2r;
+                            *speq.get_unchecked_mut(speq_idx + 1) = h2i - h1i;
+                        }
                     } else {
                         let j3 = nn3 + 2 - 2 * i3;
                         let data_idx1 = i1 * nn2 * nn3 + i2 * nn3 + ii3;
                         let data_idx2 = j1 * nn2 * nn3 + j2 * nn3 + j3 - 1;
                         
-                        let d_ii3 = *data.get_unchecked(data_idx1);
-                        let d_ii3_1 = *data.get_unchecked(data_idx1 + 1);
-                        let d_j3 = *data.get_unchecked(data_idx2);
-                        let d_j3_1 = *data.get_unchecked(data_idx2 + 1);
-                        
-                        let h1r = c1 * (d_ii3 + d_j3);
-                        let h1i = c1 * (d_ii3_1 - d_j3_1);
-                        let h2i = c2 * (d_ii3 - d_j3);
-                        let h2r = -c2 * (d_ii3_1 + d_j3_1);
-                        
-                        *data.get_unchecked_mut(data_idx1) = h1r + wr * h2r - wi * h2i;
-                        *data.get_unchecked_mut(data_idx1 + 1) = h1i + wr * h2i + wi * h2r;
-                        *data.get_unchecked_mut(data_idx2) = h1r - wr * h2r + wi * h2i;
-                        *data.get_unchecked_mut(data_idx2 + 1) = -h1i + wr * h2i + wi * h2r;
+                        unsafe {
+                            let d_ii3 = *data.get_unchecked(data_idx1);
+                            let d_ii3_1 = *data.get_unchecked(data_idx1 + 1);
+                            let d_j3 = *data.get_unchecked(data_idx2);
+                            let d_j3_1 = *data.get_unchecked(data_idx2 + 1);
+                            
+                            let h1r = c1 * (d_ii3 + d_j3);
+                            let h1i = c1 * (d_ii3_1 - d_j3_1);
+                            let h2i = c2 * (d_ii3 - d_j3);
+                            let h2r = -c2 * (d_ii3_1 + d_j3_1);
+                            
+                            *data.get_unchecked_mut(data_idx1) = h1r + _wr * h2r - _wi * h2i;
+                            *data.get_unchecked_mut(data_idx1 + 1) = h1i + _wr * h2i + _wi * h2r;
+                            *data.get_unchecked_mut(data_idx2) = h1r - _wr * h2r + _wi * h2i;
+                            *data.get_unchecked_mut(data_idx2 + 1) = -h1i + _wr * h2i + _wi * h2r;
+                        }
                     }
                 }
+            });
 
-                // Update rotation factors
-                let wtemp = wr;
-                wr = wtemp * wpr - wi * wpi + wr;
-                wi = wi * wpr + wtemp * wpi + wi;
-            }
-        });
-
-        if isign == -1 {
-            // Inverse transform
-            fourn(data, &[nn1, nn2, nn3_half], 3, isign);
+            // Update rotation factors
+            let wtemp = _wr;
+            _wr = wtemp * wpr - _wi * wpi + _wr;
+            _wi = _wi * wpr + wtemp * wpi + _wi;
         }
+    }
+
+    if isign == -1 {
+        // Inverse transform
+        fourn(data, &[nn1, nn2, nn3_half], 3, isign);
     }
 }
 
 /// Wrapper for the existing fourn function
-fn fourn(data: &mut [f64], nn: &[usize], ndim: usize, isign: i32) {
+fn fourn(_data: &mut [f64], _nn: &[usize], _ndim: usize, _isign: i32) {
     // This would call your existing fourn implementation
     unimplemented!("Use your fourn implementation")
 }

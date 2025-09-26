@@ -189,6 +189,7 @@ pub fn polydiv_cached(u: &[f64], v: &[f64]) -> (Vec<f64>, Vec<f64>) {
 use std::arch::x86_64::*;
 
 #[cfg(target_arch = "x86_64")]
+#[target_feature(enable = "avx")]
 pub unsafe fn polydiv_simd(u: &[f64], v: &[f64]) -> (Vec<f64>, Vec<f64>) {
     let n = u.len() - 1;
     let nv = v.len() - 1;
@@ -201,17 +202,17 @@ pub unsafe fn polydiv_simd(u: &[f64], v: &[f64]) -> (Vec<f64>, Vec<f64>) {
         q[k] = r[nv + k] * v0_recip;
         
         // Process multiple elements with SIMD when possible
-        let qk_vec = _mm256_set1_pd(q[k]);
+        let qk_vec = unsafe { _mm256_set1_pd(q[k]) };
         let mut j = nv + k - 1;
         
         while j >= k + 3 {
-            let r_vec = _mm256_loadu_pd(r.as_ptr().add(j - 3));
-            let v_vec = _mm256_loadu_pd(v.as_ptr().add(j - k - 3 + 1));
+            let r_vec = unsafe { _mm256_loadu_pd(r.as_ptr().add(j - 3)) };
+            let v_vec = unsafe { _mm256_loadu_pd(v.as_ptr().add(j - k - 3 + 1)) };
             
-            let product = _mm256_mul_pd(qk_vec, v_vec);
-            let result = _mm256_sub_pd(r_vec, product);
+            let product = unsafe { _mm256_mul_pd(qk_vec, v_vec) };
+            let result = unsafe { _mm256_sub_pd(r_vec, product) };
             
-            _mm256_storeu_pd(r.as_mut_ptr().add(j - 3), result);
+            unsafe { _mm256_storeu_pd(r.as_mut_ptr().add(j - 3), result) };
             j -= 4;
         }
         

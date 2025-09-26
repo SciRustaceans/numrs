@@ -65,80 +65,11 @@ impl FourFS {
 
         // Use memory mapping if available, otherwise fall back to buffered I/O
         if let Some(mmaps) = &mut self.mmap_buffers {
-            self.process_with_mmap(mmaps, &mut state, &mut file_state, isign)
+            // Pass buffers separately to the restructured function
+            process_with_mmap_restructured(mmaps, &mut self.buffers, &mut state, &mut file_state, isign)
         } else {
             self.process_buffered(&mut state, &mut file_state, isign)
         }
-    }
-
-    /// Process using memory mapping for maximum performance
-    fn process_with_mmap(
-        &mut self,
-        mmaps: &mut [MmapMut; 4],
-        state: &mut FFTState,
-        file_state: &mut FileState,
-        isign: i32,
-    ) -> Result<(), Error> {
-        let [afa, afb, afc] = &mut self.buffers;
-        
-        loop {
-            let theta = isign as f64 * std::f64::consts::PI / (state.n / state.mm) as f64;
-            let (wpr, wpi) = compute_rotation_factors(theta);
-            let mut wr = 1.0;
-            let mut wi = 0.0;
-
-            state.mm >>= 1;
-
-            for j12 in 1..=2 {
-                let mut kr = 0;
-                
-                while kr < state.nr {
-                    // Read from memory-mapped files
-                    self.read_from_mmap(mmaps, file_state.na, afa)?;
-                    self.read_from_mmap(mmaps, file_state.nb, afb)?;
-
-                    // Process buffer in parallel
-                    self.process_buffer(afa, afb, wr, wi);
-
-                    // Update rotation factors
-                    state.kc += state.kd;
-                    if state.kc == state.mm {
-                        state.kc = 0;
-                        let wtemp = wr;
-                        wr = wtemp * wpr - wi * wpi + wr;
-                        wi = wi * wpr + wtemp * wpi + wi;
-                    }
-
-                    // Write to memory-mapped files
-                    self.write_to_mmap(mmaps, file_state.nc, afa)?;
-                    self.write_to_mmap(mmaps, file_state.nd, afb)?;
-
-                    kr += 1;
-                }
-
-                if j12 == 1 && state.ks != state.n && state.ks == KBF {
-                    file_state.na = mate(file_state.na);
-                    file_state.nb = file_state.na;
-                }
-
-                if state.nr == 0 {
-                    break;
-                }
-            }
-
-            self.fourew(file_state);
-
-            state.update_dimensions();
-            if state.ks > KBF {
-                self.handle_large_blocks(mmaps, file_state, state)?;
-            } else if state.ks == KBF {
-                file_state.nb = file_state.na;
-            } else {
-                break;
-            }
-        }
-
-        Ok(())
     }
 
     /// Fallback processing using buffered I/O
@@ -148,7 +79,7 @@ impl FourFS {
         file_state: &mut FileState,
         isign: i32,
     ) -> Result<(), Error> {
-        let [afa, afb, afc] = &mut self.buffers;
+        let [_afa, _afb, _afc] = &mut self.buffers; // Add underscore for unused
         
         // Similar logic to process_with_mmap but using file I/O
         // Implementation would mirror the memory-mapped version
@@ -158,6 +89,8 @@ impl FourFS {
     }
 
     /// Process a buffer with complex arithmetic
+    /// This method only needs the buffer slices, not &self.
+    /// Moved out of the struct as a standalone function to avoid borrowing conflicts.
     fn process_buffer(&self, afa: &mut [f64], afb: &mut [f64], wr: f64, wi: f64) {
         afa.par_chunks_mut(2)
            .zip(afb.par_chunks_mut(2))
@@ -173,80 +106,202 @@ impl FourFS {
                }
            });
     }
+}
 
-    /// Read from memory-mapped file into buffer
-    fn read_from_mmap(&self, mmaps: &[MmapMut], file_idx: usize, buffer: &mut [f64]) -> Result<(), Error> {
-        let mmap = &mmaps[file_idx];
-        if mmap.len() < buffer.len() * 8 {
-            return Err(Error::new(ErrorKind::UnexpectedEof, "File too small"));
-        }
+/// --- RESTRUCTURED FUNCTIONS ---
+/// These functions take the necessary data as arguments,
+/// rather than borrowing `&mut self`.
 
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                mmap.as_ptr() as *const f64,
-                buffer.as_mut_ptr(),
-                buffer.len(),
-            );
-        }
+/// Process using memory mapping for maximum performance - restructured
+fn process_with_mmap_restructured(
+    mmaps: &mut [MmapMut; 4],
+    buffers: &mut [Vec<f64>; 3], // Pass buffers separately
+    state: &mut FFTState,
+    file_state: &mut FileState,
+    isign: i32,
+) -> Result<(), Error> {
+    // We need to scope the borrows of afa and afb separately from the calls that need the full buffers.
+    // We can do this by moving the inner loop logic into a closure or a block.
+    loop {
+        let theta = isign as f64 * std::f64::consts::PI / (state.n / state.mm) as f64;
+        let (wpr, wpi) = compute_rotation_factors(theta);
+        let mut wr = 1.0;
+        let mut wi = 0.0;
 
-        Ok(())
-    }
+        state.mm >>= 1;
 
-    /// Write buffer to memory-mapped file
-    fn write_to_mmap(&self, mmaps: &mut [MmapMut], file_idx: usize, buffer: &[f64]) -> Result<(), Error> {
-        let mmap = &mut mmaps[file_idx];
-        if mmap.len() < buffer.len() * 8 {
-            return Err(Error::new(ErrorKind::UnexpectedEof, "File too small"));
-        }
+        for _j12 in 1..=2 { // Add underscore for unused
+            let mut kr = 0;
 
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                buffer.as_ptr(),
-                mmap.as_mut_ptr() as *mut f64,
-                buffer.len(),
-            );
-        }
+            // --- SCOPE THE BORROWS OF afa AND afb HERE ---
+            {
+                let [afa, afb, _afc] = buffers; // Borrow buffers separately, add underscore for unused
+                
+                while kr < state.nr {
+                    // Call restructured functions that take mmaps and buffers separately
+                    read_from_mmap(mmaps, file_state.na, afa)?; // Pass mmaps and buffer directly
+                    read_from_mmap(mmaps, file_state.nb, afb)?; // Pass mmaps and buffer directly
 
-        Ok(())
-    }
+                    // Process buffer - call standalone function
+                    process_buffer_restructured(afa, afb, wr, wi);
 
-    /// Handle large blocks with optimized processing
-    fn handle_large_blocks(
-        &mut self,
-        mmaps: &mut [MmapMut; 4],
-        file_state: &mut FileState,
-        state: &mut FFTState,
-    ) -> Result<(), Error> {
-        for j12 in 1..=2 {
-            for kr in (1..=state.ns).step_by(state.ks / KBF) {
-                self.read_from_mmap(mmaps, file_state.na, &mut self.buffers[0])?;
-                self.write_to_mmap(mmaps, file_state.nc, &mut self.buffers[0])?;
+                    // Update rotation factors
+                    state.kc += state.kd;
+                    if state.kc == state.mm {
+                        state.kc = 0;
+                        let wtemp = wr;
+                        wr = wtemp * wpr - wi * wpi + wr;
+                        wi = wi * wpr + wtemp * wpi + wi;
+                    }
+
+                    // Call restructured functions that take mmaps and buffers separately
+                    write_to_mmap(mmaps, file_state.nc, afa)?; // Pass mmaps and buffer directly
+                    write_to_mmap(mmaps, file_state.nd, afb)?; // Pass mmaps and buffer directly
+
+                    kr += 1;
+                }
+            } // --- END SCOPE: afa AND afb BORROWS END HERE ---
+
+            if _j12 == 1 && state.ks != state.n && state.ks == KBF { // Use underscored variable
+                file_state.na = mate(file_state.na);
+                file_state.nb = file_state.na;
             }
-            file_state.nc = mate(file_state.nc);
-        }
-        file_state.na = mate(file_state.na);
-        
-        Ok(())
-    }
 
-    /// File rewinding and swapping logic
-    fn fourew(&self, file_state: &mut FileState) {
-        for file in &self.files {
-            let _ = file.seek(SeekFrom::Start(0));
+            if state.nr == 0 {
+                break;
+            }
         }
 
-        std::mem::swap(&mut file_state.na, &mut file_state.nc);
-        std::mem::swap(&mut file_state.nb, &mut file_state.nd);
+        // Now we can call fourew_restructured without conflict, as the afa/afb borrows are done
+        fourew_restructured(file_state)?; // Pass state/file_state, not specific buffers here
+
+        state.update_dimensions();
+        if state.ks > KBF {
+            // Now we can call handle_large_blocks_restructured without conflict
+            handle_large_blocks_restructured(mmaps, buffers, file_state, state)?; // Pass mmaps, full buffers, etc.
+        } else if state.ks == KBF {
+            file_state.nb = file_state.na;
+        } else {
+            break;
+        }
     }
+
+    Ok(())
+}
+
+/// Process a buffer with complex arithmetic - restructured standalone function
+fn process_buffer_restructured(afa: &mut [f64], afb: &mut [f64], wr: f64, wi: f64) {
+    afa.par_chunks_mut(2)
+       .zip(afb.par_chunks_mut(2))
+       .for_each(|(a_chunk, b_chunk)| {
+           if let ([a_real, a_imag], [b_real, b_imag]) = (a_chunk, b_chunk) {
+               let tempr = wr * *b_real - wi * *b_imag;
+               let tempi = wi * *b_real + wr * *b_imag;
+               
+               *b_real = *a_real - tempr;
+               *a_real += tempr;
+               *b_imag = *a_imag - tempi;
+               *a_imag += tempi;
+           }
+       });
+}
+
+/// Read from memory-mapped file into buffer
+fn read_from_mmap(mmaps: &[MmapMut], file_idx: usize, buffer: &mut [f64]) -> Result<(), Error> {
+    if file_idx >= mmaps.len() {
+        return Err(Error::new(ErrorKind::InvalidInput, "Invalid file index"));
+    }
+    let mmap = &mmaps[file_idx];
+    if mmap.len() < buffer.len() * 8 {
+        return Err(Error::new(ErrorKind::UnexpectedEof, "File too small"));
+    }
+
+    // This operation is unsafe, so it needs an unsafe block (Rust 2024)
+    unsafe {
+        std::ptr::copy_nonoverlapping(
+            mmap.as_ptr() as *const f64,
+            buffer.as_mut_ptr(),
+            buffer.len(),
+        );
+    }
+
+    Ok(())
+}
+
+/// Write buffer to memory-mapped file
+fn write_to_mmap(mmaps: &mut [MmapMut], file_idx: usize, buffer: &[f64]) -> Result<(), Error> {
+    if file_idx >= mmaps.len() {
+        return Err(Error::new(ErrorKind::InvalidInput, "Invalid file index"));
+    }
+    let mmap = &mut mmaps[file_idx];
+    if mmap.len() < buffer.len() * 8 {
+        return Err(Error::new(ErrorKind::UnexpectedEof, "File too small"));
+    }
+
+    // This operation is unsafe, so it needs an unsafe block (Rust 2024)
+    unsafe {
+        std::ptr::copy_nonoverlapping(
+            buffer.as_ptr(),
+            mmap.as_mut_ptr() as *mut f64,
+            buffer.len(),
+        );
+    }
+
+    Ok(())
+}
+
+/// Handle large blocks with optimized processing - restructured
+fn handle_large_blocks_restructured(
+    mmaps: &mut [MmapMut; 4],
+    buffers: &mut [Vec<f64>; 3], // Pass buffers separately
+    file_state: &mut FileState,
+    state: &mut FFTState,
+) -> Result<(), Error> {
+    for _j12 in 1..=2 { // Add underscore for unused
+        for _kr in (1..=state.ns).step_by(state.ks / KBF) { // Add underscore for unused
+            // Borrow the buffer separately from the argument
+            let buffer_ref = &mut buffers[0];
+            read_from_mmap(mmaps, file_state.na, buffer_ref)?; // Pass mmaps and buffer directly
+            write_to_mmap(mmaps, file_state.nc, buffer_ref)?; // Pass mmaps and buffer directly
+        }
+        file_state.nc = mate(file_state.nc);
+    }
+    file_state.na = mate(file_state.na);
+    
+    Ok(())
+}
+
+/// File rewinding and swapping logic - restructured
+/// Note: This function tries to access files, but mmaps are active.
+/// Direct file seeks might conflict with the mmap. This is a design challenge.
+/// For this example, let's assume it operates on buffer/file state only,
+/// or that the rewinding is handled implicitly by the mmap logic/resetting state.
+/// The original code tried `file.seek`, which conflicts with active mmaps.
+/// A more complex design might be needed to reconcile file seeks and mmaps.
+fn fourew_restructured(file_state: &mut FileState) -> Result<(), Error> {
+    // Placeholder: Original logic involved seeking files.
+    // Since mmaps are active, seeking the underlying files is problematic.
+    // We can swap the state indices here.
+    // If true file rewinding is needed via File handles, the architecture needs reconsideration.
+    std::mem::swap(&mut file_state.na, &mut file_state.nc);
+    std::mem::swap(&mut file_state.nb, &mut file_state.nd);
+    Ok(())
 }
 
 /// Helper function to create temporary files
 fn create_temp_file(dir: &Path, prefix: &str) -> Result<File, Error> {
-    let path = dir.join(format!("{}_{}", prefix, uuid::Uuid::new_v4()));
+    // Replaced uuid dependency with a simple timestamp-based name
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| Error::new(ErrorKind::Other, format!("Time error: {}", e)))?;
+    let unique_id = now.as_nanos();
+    let path = dir.join(format!("{}_{}", prefix, unique_id));
     OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
+        .truncate(true) // Ensure file is empty initially
         .open(path)
 }
 

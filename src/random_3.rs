@@ -1,4 +1,3 @@
-// lib.rs
 use std::sync::{Arc, Mutex};
 use lazy_static::lazy_static;
 
@@ -361,8 +360,8 @@ impl Ran3 {
 // Extension traits for additional functionality
 pub trait RandomExt {
     fn shuffle<T>(&mut self, slice: &mut [T]);
-    fn choose<T>(&mut self, slice: &[T]) -> Option<&T>;
-    fn choose_mut<T>(&mut self, slice: &mut [T]) -> Option<&mut T>;
+    fn choose<'a, T>(&mut self, slice: &'a [T]) -> Option<&'a T>;
+    fn choose_mut<'a, T>(&mut self, slice: &'a mut [T]) -> Option<&'a mut T>;
 }
 
 impl RandomExt for Ran3 {
@@ -373,21 +372,21 @@ impl RandomExt for Ran3 {
         }
     }
 
-    fn choose<T>(&mut self, slice: &[T]) -> Option<&T> {
+    fn choose<'a, T>(&mut self, slice: &'a [T]) -> Option<&'a T> {
         if slice.is_empty() {
             None
         } else {
             let index = self.next_int(0, (slice.len() - 1) as i64) as usize;
-            Some(&slice[index])
+            slice.get(index)
         }
     }
 
-    fn choose_mut<T>(&mut self, slice: &mut [T]) -> Option<&mut T> {
+    fn choose_mut<'a, T>(&mut self, slice: &'a mut [T]) -> Option<&'a mut T> {
         if slice.is_empty() {
             None
         } else {
             let index = self.next_int(0, (slice.len() - 1) as i64) as usize;
-            Some(&mut slice[index])
+            slice.get_mut(index)
         }
     }
 }
