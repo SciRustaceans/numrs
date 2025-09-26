@@ -146,10 +146,10 @@ fn small_x_expansion(x: f64, xmu: f64, xmu2: f64, f: f64, w: f64) -> (f64, f64, 
     
     let (gam1, gam2, gampl, gammi) = beschd(xmu);
     
-    let ff = 2.0 / PI * fact * (gam1 * e.cosh() + gam2 * fact2 * d);
+    let mut ff = 2.0 / PI * fact * (gam1 * e.cosh() + gam2 * fact2 * d);
     let e_val = e.exp();
-    let p = e_val / (gampl * PI);
-    let q = 1.0 / (e_val * PI * gammi);
+    let mut p = e_val / (gampl * PI);
+    let mut q = 1.0 / (e_val * PI * gammi);
     
     let pimu2 = 0.5 * pimu;
     let fact3 = if pimu2.abs() < EPS {
@@ -194,10 +194,10 @@ fn small_x_expansion(x: f64, xmu: f64, xmu2: f64, f: f64, w: f64) -> (f64, f64, 
 
 /// Continued fraction for large x
 fn large_x_expansion(x: f64, xi: f64, xmu: f64, xmu2: f64, f: f64, w: f64) -> (f64, f64, f64, f64) {
-    let a = 0.25 - xmu2;
+    let mut a = 0.25 - xmu2;
     let mut p = -0.5 * xi;
     let mut q = 1.0;
-    let mut br = 2.0 * x;
+    let br = 2.0 * x;
     let mut bi = 2.0;
     
     let fact = a * xi / (p * p + q * q);
@@ -258,7 +258,7 @@ fn large_x_expansion(x: f64, xi: f64, xmu: f64, xmu2: f64, f: f64, w: f64) -> (f
     let rjmu = if rjmu.is_nan() { 0.0 } else { rjmu };
     
     let rymu = if rjmu != 0.0 { rjmu } else { 0.0 };
-    let rymup = rymu * gam;
+    let _rymup = rymu * gam;  // Prefix with underscore since it's unused
     let rymup = rymu * (p + q / gam);
     let ry1 = xmu * xi * rymu - rymup;
     

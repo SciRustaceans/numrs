@@ -19,7 +19,7 @@ pub fn twofft(data1: &[f64], data2: &[f64], fft1: &mut [f64], fft2: &mut [f64]) 
 #[inline(always)]
 fn pack_real_data(data1: &[f64], data2: &[f64], fft1: &mut [f64], n: usize) {
     if n >= 1024 {
-        // Use parallel chunks instead of parallel iterator with mutation
+        // Use parallel chunks with proper indexing
         pack_real_data_parallel_chunks(data1, data2, fft1, n);
     } else {
         // Sequential version for small arrays
@@ -37,22 +37,21 @@ fn pack_real_data_sequential(data1: &[f64], data2: &[f64], fft1: &mut [f64], n: 
 
 #[inline(always)]
 fn pack_real_data_parallel_chunks(data1: &[f64], data2: &[f64], fft1: &mut [f64], n: usize) {
-    // Process in chunks to avoid closure mutation issues
-    let chunk_size = std::cmp::max(1, n / rayon::current_num_threads().max(1));
-    
-    for chunk in (0..n).collect::<Vec<_>>().chunks(chunk_size) {
-        // Process each chunk sequentially within parallel context
-        for &j in chunk {
-            fft1[2 * j] = data1[j];
-            fft1[2 * j + 1] = data2[j];
+    // Use parallel iterator with proper chunking
+    (0..n).into_par_iter().for_each(|j| {
+        // Use unsafe to avoid borrowing issues, but ensure safety
+        unsafe {
+            let fft1_ptr = fft1.as_mut_ptr();
+            *fft1_ptr.add(2 * j) = data1[j];
+            *fft1_ptr.add(2 * j + 1) = data2[j];
         }
-    }
+    });
 }
 
 #[inline(always)]
 fn process_fft_results(fft1: &mut [f64], fft2: &mut [f64], n: usize) {
     let nn2 = 2 * n + 2;
-    let _nn3 = nn2 + 1; // Prefix with underscore since it's only used in sequential version
+    let _nn3 = nn2 + 1;
 
     // Handle DC and Nyquist components
     fft2[0] = fft1[1];
@@ -96,39 +95,38 @@ fn process_fft_results_sequential(fft1: &mut [f64], fft2: &mut [f64], n: usize) 
 fn process_fft_results_parallel(fft1: &mut [f64], fft2: &mut [f64], n: usize) {
     let nn2 = 2 * n + 2;
     
-    // Use a simpler approach: process chunks sequentially in parallel
+    // Use a simpler approach: process indices in parallel using raw pointers
     let max_k = (n + 1) / 2;
-    let chunk_size = std::cmp::max(1, max_k / rayon::current_num_threads().max(1));
     
-    // Collect indices first, then process in parallel chunks
-    let indices: Vec<usize> = (1..max_k).collect();
+    // Use raw pointers to avoid borrowing issues in parallel closures
+    let fft1_ptr = fft1.as_mut_ptr();
+    let fft2_ptr = fft2.as_mut_ptr();
     
-    indices.par_chunks(chunk_size).for_each(|chunk| {
-        for &k in chunk {
-            let j = 2 * k;
-            if j >= n + 2 {
-                continue;
-            }
+    (1..max_k).into_par_iter().for_each(|k| {
+        let j = 2 * k;
+        if j >= n + 2 {
+            return;
+        }
+        
+        let j_rev = nn2 - j;
+        let j_rev_im = j_rev + 1;
+        
+        // Safe because each k processes unique indices
+        unsafe {
+            let rep = 0.5 * (*fft1_ptr.add(j) + *fft1_ptr.add(j_rev));
+            let rem = 0.5 * (*fft1_ptr.add(j) - *fft1_ptr.add(j_rev));
+            let aip = 0.5 * (*fft1_ptr.add(j + 1) + *fft1_ptr.add(j_rev_im));
+            let aim = 0.5 * (*fft1_ptr.add(j + 1) - *fft1_ptr.add(j_rev_im));
             
-            let j_rev = nn2 - j;
-            let j_rev_im = j_rev + 1;
+            *fft1_ptr.add(j) = rep;
+            *fft1_ptr.add(j + 1) = aim;
+            *fft1_ptr.add(j_rev) = rep;
+            *fft1_ptr.add(j_rev_im) = -aim;
             
-            // Since we're accessing unique indices per k, this is safe
-            let rep = 0.5 * (fft1[j] + fft1[j_rev]);
-            let rem = 0.5 * (fft1[j] - fft1[j_rev]);
-            let aip = 0.5 * (fft1[j + 1] + fft1[j_rev_im]);
-            let aim = 0.5 * (fft1[j + 1] - fft1[j_rev_im]);
-            
-            // Safe because each chunk processes unique indices
-            fft1[j] = rep;
-            fft1[j + 1] = aim;
-            fft1[j_rev] = rep;
-            fft1[j_rev_im] = -aim;
-            
-            fft2[j] = aip;
-            fft2[j + 1] = -rem;
-            fft2[j_rev] = aip;
-            fft2[j_rev_im] = rem;
+            *fft2_ptr.add(j) = aip;
+            *fft2_ptr.add(j + 1) = -rem;
+            *fft2_ptr.add(j_rev) = aip;
+            *fft2_ptr.add(j_rev_im) = rem;
         }
     });
 }
@@ -259,7 +257,8 @@ impl TwoFFTProcessor {
     
     pub fn process_batch(&self, batches: &[(&[f64], &[f64], &mut [f64], &mut [f64])]) {
         // Use sequential processing for batches to avoid complex borrowing issues
-        for &(data1, data2, fft1, fft2) in batches {
+        for batch in batches {
+            let (data1, data2, fft1, fft2) = batch;
             self.process(data1, data2, fft1, fft2);
         }
     }
