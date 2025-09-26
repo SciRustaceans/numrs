@@ -2,6 +2,8 @@ use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
 use ndarray::{Array1, ArrayView1};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 /// Evaluates a rational function: numerator(x) / denominator(x)
 /// 
@@ -52,12 +54,31 @@ pub fn ratval_inplace(x: f64, cof: &[f64], m: usize, k: usize) -> f64 {
     sumn / (1.0 + sumd)
 }
 
+// Helper function to create a hash key from f64 values
+fn hash_f64_tuple(x: f64, config: usize) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    x.to_bits().hash(&mut hasher);
+    config.hash(&mut hasher);
+    hasher.finish()
+}
+
+// Helper function to create a hash key for coefficients
+fn hash_coefficients(cof: &[f64], m: usize, k: usize) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    for &val in cof {
+        val.to_bits().hash(&mut hasher);
+    }
+    m.hash(&mut hasher);
+    k.hash(&mut hasher);
+    hasher.finish()
+}
+
 /// Thread-safe rational function evaluator with caching
 pub struct RationalEvaluator {
     coefficients: Vec<f64>,
     m: usize,
     k: usize,
-    cache: Mutex<lru::LruCache<(f64, usize), f64>>,
+    cache: Mutex<std::collections::HashMap<u64, f64>>,
 }
 
 impl RationalEvaluator {
@@ -68,14 +89,14 @@ impl RationalEvaluator {
             coefficients,
             m,
             k,
-            cache: Mutex::new(lru::LruCache::new(1000)), // Cache 1000 recent evaluations
+            cache: Mutex::new(std::collections::HashMap::new()),
         }
     }
     
     /// Evaluate at a point with optional caching
     pub fn evaluate(&self, x: f64, use_cache: bool) -> f64 {
         if use_cache {
-            let key = (x, self.m * 1000 + self.k); // Unique key for (x, configuration)
+            let key = hash_f64_tuple(x, self.m * 1000 + self.k); // Unique key for (x, configuration)
             let mut cache = self.cache.lock().unwrap();
             
             if let Some(&result) = cache.get(&key) {
@@ -83,7 +104,7 @@ impl RationalEvaluator {
             }
             
             let result = ratval_inplace(x, &self.coefficients, self.m, self.k);
-            cache.put(key, result);
+            cache.insert(key, result);
             result
         } else {
             ratval_inplace(x, &self.coefficients, self.m, self.k)
@@ -158,17 +179,17 @@ where
 }
 
 /// Global cache for frequently used rational functions
-static RATIONAL_CACHE: Lazy<Mutex<std::collections::HashMap<(Vec<f64>, usize, usize), Arc<RationalEvaluator>>>> = 
+static RATIONAL_CACHE: Lazy<Mutex<std::collections::HashMap<u64, Arc<RationalEvaluator>>>> = 
     Lazy::new(|| Mutex::new(std::collections::HashMap::new()));
 
 /// Cached version that reuses RationalEvaluator instances
 pub fn ratval_cached(x: f64, cof: &[f64], m: usize, k: usize) -> f64 {
-    let key = (cof.to_vec(), m, k);
+    let key = hash_coefficients(cof, m, k);
     
     let evaluator = {
         let mut cache = RATIONAL_CACHE.lock().unwrap();
-        cache.entry(key.clone())
-            .or_insert_with(|| Arc::new(RationalEvaluator::new(key.0, key.1, key.2)))
+        cache.entry(key)
+            .or_insert_with(|| Arc::new(RationalEvaluator::new(cof.to_vec(), m, k)))
             .clone()
     };
     

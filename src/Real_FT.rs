@@ -34,7 +34,7 @@ fn process_realft_forward(data: &mut [f64], n: usize, c2: f64) {
     let np3 = n + 3;
     
     if n >= 1024 {
-        process_realft_forward_parallel(data, n, c1, c2, wr, wi, wpr, wpi, np3);
+        process_realft_forward_parallel(data, n, c1, c2, np3);
     } else {
         process_realft_forward_sequential(data, n, c1, c2, &mut wr, &mut wi, wpr, wpi, np3);
     }
@@ -85,10 +85,6 @@ fn process_realft_forward_parallel(
     n: usize, 
     c1: f64, 
     c2: f64, 
-    wr: f64, 
-    wi: f64, 
-    wpr: f64, 
-    wpi: f64,
     np3: usize
 ) {
     let quarter_n = n / 4;
@@ -99,27 +95,25 @@ fn process_realft_forward_parallel(
         })
         .collect();
     
-    data.par_chunks_mut(n)
-        .for_each(|chunk| {
-            for i in 2..=quarter_n {
-                let (wr, wi) = rotation_factors[i - 2];
-                
-                let i1 = 2 * i - 1;
-                let i2 = i1 + 1;
-                let i3 = np3 - i2;
-                let i4 = i3 + 1;
-                
-                let h1r = c1 * (chunk[i1] + chunk[i3]);
-                let h1i = c1 * (chunk[i2] - chunk[i4]);
-                let h2r = -c2 * (chunk[i2] + chunk[i4]);
-                let h2i = c2 * (chunk[i1] - chunk[i3]);
-                
-                chunk[i1] = h1r + wr * h2r - wi * h2i;
-                chunk[i2] = h1i + wr * h2i + wi * h2r;
-                chunk[i3] = h1r - wr * h2r + wi * h2i;
-                chunk[i4] = -h1i + wr * h2i + wi * h2r;
-            }
-        });
+    // Process the entire array as a single chunk
+    for i in 2..=quarter_n {
+        let (wr, wi) = rotation_factors[i - 2];
+        
+        let i1 = 2 * i - 1;
+        let i2 = i1 + 1;
+        let i3 = np3 - i2;
+        let i4 = i3 + 1;
+        
+        let h1r = c1 * (data[i1] + data[i3]);
+        let h1i = c1 * (data[i2] - data[i4]);
+        let h2r = -c2 * (data[i2] + data[i4]);
+        let h2i = c2 * (data[i1] - data[i3]);
+        
+        data[i1] = h1r + wr * h2r - wi * h2i;
+        data[i2] = h1i + wr * h2i + wi * h2r;
+        data[i3] = h1r - wr * h2r + wi * h2i;
+        data[i4] = -h1i + wr * h2i + wi * h2r;
+    }
 }
 
 #[inline(always)]
@@ -141,7 +135,7 @@ fn process_realft_inverse(data: &mut [f64], n: usize, c2: f64) {
     data[1] = c1 * (h1r - data[1]);
     
     if n >= 1024 {
-        process_realft_inverse_parallel(data, n, c1, c2, wr, wi, wpr, wpi, np3);
+        process_realft_inverse_parallel(data, n, c1, c2, np3);
     } else {
         process_realft_inverse_sequential(data, n, c1, c2, &mut wr, &mut wi, wpr, wpi, np3);
     }
@@ -187,10 +181,6 @@ fn process_realft_inverse_parallel(
     n: usize, 
     c1: f64, 
     c2: f64, 
-    wr: f64, 
-    wi: f64, 
-    wpr: f64, 
-    wpi: f64,
     np3: usize
 ) {
     let quarter_n = n / 4;
@@ -201,27 +191,25 @@ fn process_realft_inverse_parallel(
         })
         .collect();
     
-    data.par_chunks_mut(n)
-        .for_each(|chunk| {
-            for i in 2..=quarter_n {
-                let (wr, wi) = rotation_factors[i - 2];
-                
-                let i1 = 2 * i - 1;
-                let i2 = i1 + 1;
-                let i3 = np3 - i2;
-                let i4 = i3 + 1;
-                
-                let h1r = c1 * (chunk[i1] + chunk[i3]);
-                let h1i = c1 * (chunk[i2] - chunk[i4]);
-                let h2r = -c2 * (chunk[i2] + chunk[i4]);
-                let h2i = c2 * (chunk[i1] - chunk[i3]);
-                
-                chunk[i1] = h1r + wr * h2r - wi * h2i;
-                chunk[i2] = h1i + wr * h2i + wi * h2r;
-                chunk[i3] = h1r - wr * h2r + wi * h2i;
-                chunk[i4] = -h1i + wr * h2i + wi * h2r;
-            }
-        });
+    // Process the entire array as a single chunk
+    for i in 2..=quarter_n {
+        let (wr, wi) = rotation_factors[i - 2];
+        
+        let i1 = 2 * i - 1;
+        let i2 = i1 + 1;
+        let i3 = np3 - i2;
+        let i4 = i3 + 1;
+        
+        let h1r = c1 * (data[i1] + data[i3]);
+        let h1i = c1 * (data[i2] - data[i4]);
+        let h2r = -c2 * (data[i2] + data[i4]);
+        let h2i = c2 * (data[i1] - data[i3]);
+        
+        data[i1] = h1r + wr * h2r - wi * h2i;
+        data[i2] = h1i + wr * h2i + wi * h2r;
+        data[i3] = h1r - wr * h2r + wi * h2i;
+        data[i4] = -h1i + wr * h2i + wi * h2r;
+    }
 }
 
 // Stable optimized version (replaces SIMD version)
@@ -559,12 +547,12 @@ mod tests {
     #[test]
     fn test_four1_function() {
         let n = 8;
-        let mut data = vec![1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0];
+        let mut data = vec![1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0];
         
         four1(&mut data, n, 1);
         
         // Basic test - FFT should complete without panic
-        assert_eq!(data.len(), 18);
+        assert_eq!(data.len(), 16);
     }
 
     #[test]
@@ -592,13 +580,13 @@ mod tests {
             })
             .collect();
         
-        let batch_refs: Vec<(&mut [f64], usize, i32)> = batches
+        let mut batch_refs: Vec<(&mut [f64], usize, i32)> = batches
             .iter_mut()
             .map(|(data, n, isign)| (data.as_mut_slice(), *n, *isign))
             .collect();
         
         let start = std::time::Instant::now();
-        processor.process_batch(&batch_refs);
+        processor.process_batch(&mut batch_refs);
         let duration = start.elapsed();
         
         println!("Batch RealFT processing (4x512): {:?}", duration);

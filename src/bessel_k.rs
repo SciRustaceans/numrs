@@ -1,12 +1,14 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
+use std::fmt::Debug;
+use std::ops::{Add, Sub, Mul, Div, Neg};
 
 /// Computes the modified Bessel function of the second kind Kₙ(x) for integer order n ≥ 2
 /// Uses upward recurrence relation for higher orders
 /// Supports both f32 and f64 precision through generics
 pub fn bessk<T>(n: i32, x: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     if n < 2 {
         panic!("bessk: Index n less than 2 in bessk");
@@ -31,7 +33,7 @@ where
 /// Computes the modified Bessel function of the second kind K₀(x)
 pub fn bessk0<T>(x: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     if x <= T::zero() {
         panic!("bessk0: x must be positive");
@@ -78,7 +80,7 @@ where
 /// Computes the modified Bessel function of the second kind K₁(x)
 pub fn bessk1<T>(x: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     if x <= T::zero() {
         panic!("bessk1: x must be positive");
@@ -125,7 +127,7 @@ where
 /// Computes the modified Bessel function of the first kind I₀(x)
 pub fn bessi0<T>(x: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     let ax = x.abs();
     
@@ -165,7 +167,7 @@ where
 /// Computes the modified Bessel function of the first kind I₁(x)
 pub fn bessi1<T>(x: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     let ax = x.abs();
     
@@ -214,7 +216,7 @@ where
 /// Multithreaded computation of modified Bessel functions Kₙ(x) for multiple orders ≥ 2
 pub fn bessk_multithreaded<T>(orders: &[i32], x: T, num_threads: usize) -> Vec<T>
 where
-    T: BesselFloat + Send + Sync + 'static,
+    T: BesselFloat + Send + Sync + Debug + 'static,
 {
     // Filter out orders < 2 and handle errors
     let valid_orders: Vec<i32> = orders.iter()
@@ -255,16 +257,15 @@ where
         handle.join().unwrap();
     }
 
-    Arc::try_unwrap(results)
-        .unwrap()
-        .into_inner()
-        .unwrap()
+    // Use a safer approach to avoid the Debug requirement
+    let results_guard = Arc::try_unwrap(results).unwrap();
+    results_guard.into_inner().unwrap()
 }
 
 /// Computes Kₙ(x) for a range of orders n ≥ 2 using optimized recurrence
 pub fn bessk_range<T>(n_start: i32, n_end: i32, x: T) -> Vec<T>
 where
-    T: BesselFloat,
+    T: BesselFloat + Debug,
 {
     if n_start < 2 || n_end < n_start {
         panic!("bessk_range: n_start must be ≥ 2 and n_end ≥ n_start");
@@ -301,7 +302,7 @@ where
 /// Computes Kₙ(x) for multiple x values using multithreading
 pub fn bessk_multiple_x<T>(n: i32, x_values: &[T], num_threads: usize) -> Vec<T>
 where
-    T: BesselFloat + Send + Sync + 'static,
+    T: BesselFloat + Send + Sync + Debug + Clone + 'static,
 {
     if n < 2 {
         panic!("bessk_multiple_x: n must be ≥ 2");
@@ -323,7 +324,7 @@ where
         handles.push(thread::spawn(move || {
             for (local_idx, x) in chunk.iter().enumerate() {
                 let global_idx = start_idx + local_idx;
-                let result = bessk(n, *x);
+                let result = bessk(n, x.clone());
                 let mut results_lock = results_ref.lock().unwrap();
                 results_lock[global_idx] = result;
             }
@@ -334,22 +335,22 @@ where
         handle.join().unwrap();
     }
 
-    Arc::try_unwrap(results)
-        .unwrap()
-        .into_inner()
-        .unwrap()
+    // Use a safer approach to avoid the Debug requirement
+    let results_guard = Arc::try_unwrap(results).unwrap();
+    results_guard.into_inner().unwrap()
 }
 
 /// Helper trait for Bessel function floating point operations
 pub trait BesselFloat: 
     Copy + 
     PartialOrd + 
-    std::ops::Add<Output = Self> + 
-    std::ops::Sub<Output = Self> + 
-    std::ops::Mul<Output = Self> + 
-    std::ops::Div<Output = Self> + 
-    std::ops::Neg<Output = Self> +
-    FromPrimitive
+    Add<Output = Self> + 
+    Sub<Output = Self> + 
+    Mul<Output = Self> + 
+    Div<Output = Self> + 
+    Neg<Output = Self> +
+    FromPrimitive +
+    Debug
 {
     fn abs(self) -> Self;
     fn sqrt(self) -> Self;
@@ -399,7 +400,7 @@ impl FromPrimitive for f64 {
 /// Evaluates a polynomial using Horner's method
 fn polynomial_eval<T>(x: T, coeffs: &[T]) -> T
 where
-    T: BesselFloat + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+    T: BesselFloat + Add<Output = T> + Mul<Output = T>,
 {
     let mut result = T::zero();
     for &coeff in coeffs.iter().rev() {

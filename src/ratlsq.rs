@@ -1,7 +1,8 @@
 use rayon::prelude::*;
 use ndarray::{Array2, Array1, ArrayView2, ArrayView1};
-//use once_cell::sync::Lazy;
 use std::sync::Mutex;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 const NPFAC: usize = 8;
 const MAXIT: usize = 5;
@@ -63,9 +64,9 @@ where
         fs.push(func(x));
     }
     
-    let mut dev = BIG;
+    let mut dev: f64 = BIG;
     let mut best_cof = vec![0.0; ncof];
-    let mut e = 0.0;
+    let mut e: f64 = 0.0;
     
     // Pre-allocate matrix for better performance
     let mut u = Array2::zeros((npt, ncof));
@@ -86,7 +87,8 @@ where
                     
                     for (idx, i) in (start..end).enumerate() {
                         let power = wt[i];
-                        local_bb.push(power * (fs[i] * e.signum() * ee[i].signum()));
+                        // FIX: Use f64::signum() explicitly
+                        local_bb.push(power * (fs[i] * f64::signum(e) * f64::signum(ee[i])));
                         
                         // Numerator part with Horner-like accumulation
                         let mut power_val = power;
@@ -134,7 +136,8 @@ where
             // Sequential version for small problems
             for i in 0..npt {
                 let power = wt[i];
-                bb[i] = power * (fs[i] * e.signum() * ee[i].signum());
+                // FIX: Use f64::signum() explicitly
+                bb[i] = power * (fs[i] * f64::signum(e) * f64::signum(ee[i]));
                 
                 // Numerator part with optimized power calculation
                 let mut power_val = power;
@@ -158,8 +161,8 @@ where
         svbksb(&u_svd, &w, &v, &bb, &mut coff);
         
         // Evaluate error and update weights
-        let mut devmax = 0.0;
-        let mut sum = 0.0;
+        let mut devmax: f64 = 0.0;
+        let mut sum: f64 = 0.0;
         
         // Parallel error evaluation for large datasets
         if npt > 100 {
@@ -221,12 +224,12 @@ fn svd(a: &Array2<f64>) -> (Array2<f64>, Array1<f64>, Array2<f64>) {
     
     // Jacobi SVD algorithm with convergence optimization
     for iteration in 0..50 { // Increased max iterations for better convergence
-        let mut max_rotation = 0.0;
+        let mut max_rotation: f64 = 0.0;
         
         for i in 0..n {
             for j in i+1..n {
                 // Compute dot product using precomputed norms
-                let mut dot_product = 0.0;
+                let mut dot_product: f64 = 0.0;
                 for k in 0..m {
                     dot_product += u[[k, i]] * u[[k, j]];
                 }
@@ -238,7 +241,7 @@ fn svd(a: &Array2<f64>) -> (Array2<f64>, Array1<f64>, Array2<f64>) {
                 
                 // Compute rotation using stable formula
                 let diff = norms_sq[j] - norms_sq[i];
-                let denom = 2.0 * dot_product;
+                let denom: f64 = 2.0 * dot_product;
                 
                 if denom.abs() < 1e-30 {
                     continue;
@@ -248,10 +251,12 @@ fn svd(a: &Array2<f64>) -> (Array2<f64>, Array1<f64>, Array2<f64>) {
                     1.0
                 } else {
                     let zeta = diff / denom;
-                    zeta.signum() / (zeta.abs() + (1.0 + zeta * zeta).sqrt())
+                    // FIX: Use f64::signum() and f64::sqrt() explicitly
+                    f64::signum(zeta) / (zeta.abs() + f64::sqrt(1.0 + zeta * zeta))
                 };
                 
-                let c = 1.0 / (1.0 + t * t).sqrt();
+                // FIX: Use f64::sqrt() explicitly
+                let c = 1.0 / f64::sqrt(1.0 + t * t);
                 let s = t * c;
                 
                 // Apply rotation and update norms
@@ -352,10 +357,20 @@ fn ratval(x: f64, cof: &Array1<f64>, mm: usize, kk: usize) -> f64 {
     numerator / denominator
 }
 
+// Helper function to create a hash key from f64 values
+fn hash_f64_tuple(a: f64, b: f64, mm: usize, kk: usize) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    a.to_bits().hash(&mut hasher);
+    b.to_bits().hash(&mut hasher);
+    mm.hash(&mut hasher);
+    kk.hash(&mut hasher);
+    hasher.finish()
+}
+
 /// Thread-safe rational approximator with caching
 pub struct RationalApproximator<F> {
     func: F,
-    cache: Mutex<std::collections::HashMap<(f64, f64, usize, usize), (Vec<f64>, f64)>>,
+    cache: Mutex<std::collections::HashMap<u64, (Vec<f64>, f64)>>,
 }
 
 impl<F> RationalApproximator<F>
@@ -370,7 +385,7 @@ where
     }
     
     pub fn approximate(&self, a: f64, b: f64, mm: usize, kk: usize) -> (Vec<f64>, f64) {
-        let key = (a, b, mm, kk);
+        let key = hash_f64_tuple(a, b, mm, kk);
         
         // Check cache with minimal locking
         {
@@ -408,7 +423,7 @@ pub fn ratlsq_adaptive<F>(func: F, a: f64, b: f64, max_degree: usize, tol: f64) 
 where
     F: Fn(f64) -> f64 + Sync + Send,
 {
-    let mut best_dev = BIG;
+    let mut best_dev: f64 = BIG;
     let mut best_cof = Vec::new();
     let mut best_mm = 0;
     let mut best_kk = 0;

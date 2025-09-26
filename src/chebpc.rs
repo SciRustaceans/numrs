@@ -65,11 +65,15 @@ pub fn chebpc(c: &[f64], n: usize) -> Vec<f64> {
 pub unsafe fn chebpc_unsafe(c: *const f64, d: *mut f64, dd: *mut f64, n: usize) {
     // Initialize arrays to zero
     for i in 0..n {
-        *d.add(i) = 0.0;
-        *dd.add(i) = 0.0;
+        unsafe {
+            *d.add(i) = 0.0;
+            *dd.add(i) = 0.0;
+        }
     }
     
-    *d = *c.add(n-1);
+    unsafe {
+        *d = *c.add(n-1);
+    }
     
     for j in (1..n-1).rev() {
         let mut k = n - j;
@@ -80,6 +84,22 @@ pub unsafe fn chebpc_unsafe(c: *const f64, d: *mut f64, dd: *mut f64, n: usize) 
             
             for i in 0..4 {
                 let idx = k_start + i;
+                unsafe {
+                    let d_ptr = d.add(idx);
+                    let d_prev_ptr = d.add(idx - 1);
+                    let dd_ptr = dd.add(idx);
+                    
+                    let sv = *d_ptr;
+                    *d_ptr = 2.0 * *d_prev_ptr - *dd_ptr;
+                    *dd_ptr = sv;
+                }
+            }
+            k -= 4;
+        }
+        
+        // Process remainder
+        for idx in (n - j - k + 1..=n - j).rev() {
+            unsafe {
                 let d_ptr = d.add(idx);
                 let d_prev_ptr = d.add(idx - 1);
                 let dd_ptr = dd.add(idx);
@@ -88,30 +108,24 @@ pub unsafe fn chebpc_unsafe(c: *const f64, d: *mut f64, dd: *mut f64, n: usize) 
                 *d_ptr = 2.0 * *d_prev_ptr - *dd_ptr;
                 *dd_ptr = sv;
             }
-            k -= 4;
         }
         
-        // Process remainder
-        for idx in (n - j - k + 1..=n - j).rev() {
-            let d_ptr = d.add(idx);
-            let d_prev_ptr = d.add(idx - 1);
-            let dd_ptr = dd.add(idx);
-            
-            let sv = *d_ptr;
-            *d_ptr = 2.0 * *d_prev_ptr - *dd_ptr;
-            *dd_ptr = sv;
+        unsafe {
+            let sv = *d;
+            *d = -*dd + *c.add(j);
+            *dd = sv;
         }
-        
-        let sv = *d;
-        *d = -*dd + *c.add(j);
-        *dd = sv;
     }
     
     // Final adjustment
     for j in (1..n).rev() {
-        *d.add(j) = *d.add(j-1) - *dd.add(j);
+        unsafe {
+            *d.add(j) = *d.add(j-1) - *dd.add(j);
+        }
     }
-    *d = -*dd + 0.5 * *c;
+    unsafe {
+        *d = -*dd + 0.5 * *c;
+    }
 }
 
 /// Thread-safe converter with pre-allocated workspace
