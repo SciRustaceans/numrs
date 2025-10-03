@@ -8,8 +8,8 @@ pub mod utils;
 pub mod banbks; // Stand alone -> Linear algebra
 pub mod bandec; // Stand alone -> Linear algebra routine 
 pub mod lu_decomp; //ludcmp Stand alone -> Linear algebra routine
-pub mod cyclic; // Linear algebra -> stand alone?
-
+pub mod cyclic; // Linear algebra -> stand alone? fails one testj
+pub mod svd;
 //pub mod airy; // (FIX FROM ORIGINAL C CODE) Shoudl call bessik, bessjy, beschd, chebev 
 /*
 
