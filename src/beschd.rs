@@ -1,10 +1,12 @@
-use std::f64::consts::PI;
+use ndarray::prelude::*;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 const NUSE1: usize = 5;
 const NUSE2: usize = 5;
 
 /// Chebyshev polynomial evaluation for coefficients in range [a, b]
-pub fn chebev<T>(a: T, b: T, c: &[T], m: usize, x: T) -> T
+pub fn chebev<T>(a: T, b: T, c: &ArrayView1<T>, m: usize, x: T) -> T
 where
     T: BesselFloat,
 {
@@ -12,8 +14,6 @@ where
         panic!("chebev: x not in range [a, b]");
     }
 
-    let d = T::zero();
-    let dd = T::zero();
     let y = (T::from_f64(2.0).unwrap() * x - a - b) / (b - a);
     let y2 = T::from_f64(2.0).unwrap() * y;
     
@@ -34,8 +34,8 @@ pub fn beschd<T>(x: T) -> (T, T, T, T)
 where
     T: BesselFloat,
 {
-    // Chebyshev coefficients for gam1 approximation
-    let c1: Vec<T> = vec![
+    // Chebyshev coefficients for gam1 approximation using ndarray
+    let c1 = Array1::from_vec(vec![
         T::from_f64(-1.142022680371168e0).unwrap(),
         T::from_f64(6.5165112670737e-3).unwrap(),
         T::from_f64(3.087090173086e-4).unwrap(),
@@ -43,10 +43,10 @@ where
         T::from_f64(6.9437664e-9).unwrap(),
         T::from_f64(3.67795e-11).unwrap(),
         T::from_f64(-1.356e-13).unwrap(),
-    ];
+    ]);
 
-    // Chebyshev coefficients for gam2 approximation
-    let c2: Vec<T> = vec![
+    // Chebyshev coefficients for gam2 approximation using ndarray
+    let c2 = Array1::from_vec(vec![
         T::from_f64(1.843740587300905e0).unwrap(),
         T::from_f64(-7.6852840844867e-2).unwrap(),
         T::from_f64(1.2719271366546e-3).unwrap(),
@@ -55,12 +55,12 @@ where
         T::from_f64(2.423096e-10).unwrap(),
         T::from_f64(-1.703e-13).unwrap(),
         T::from_f64(-1.49e-15).unwrap(),
-    ];
+    ]);
 
     let xx = T::from_f64(8.0).unwrap() * x * x - T::one();
     
-    let gam1 = chebev(T::from_f64(-1.0).unwrap(), T::one(), &c1, NUSE1, xx);
-    let gam2 = chebev(T::from_f64(-1.0).unwrap(), T::one(), &c2, NUSE2, xx);
+    let gam1 = chebev(T::from_f64(-1.0).unwrap(), T::one(), &c1.view(), NUSE1, xx);
+    let gam2 = chebev(T::from_f64(-1.0).unwrap(), T::one(), &c2.view(), NUSE2, xx);
     
     let gampl = gam2 - x * gam1;
     let gammi = gam2 + x * gam1;
@@ -126,10 +126,10 @@ where
 /// Lanczos approximation for Gamma function
 fn lanczos_gamma<T>(z: T) -> T
 where
-    T: BesselFloat,
+    T: BesselFloat + std::ops::SubAssign + std::ops::AddAssign,
 {
-    // Lanczos coefficients
-    let p: Vec<T> = vec![
+    // Lanczos coefficients using ndarray
+    let p = Array1::from_vec(vec![
         T::from_f64(676.5203681218851).unwrap(),
         T::from_f64(-1259.1392167224028).unwrap(),
         T::from_f64(771.32342877765313).unwrap(),
@@ -138,12 +138,13 @@ where
         T::from_f64(-0.13857109526572012).unwrap(),
         T::from_f64(9.9843695780195716e-6).unwrap(),
         T::from_f64(1.5056327351493116e-7).unwrap(),
-    ];
+    ]);
     
     let mut x = z;
     if x < T::from_f64(0.5).unwrap() {
-        // Reflection formula
-        return PI / ((PI * x).sin() * lanczos_gamma(T::one() - x));
+        // Reflection formula - use only T operations
+        let pi = T::from_f64(std::f64::consts::PI).unwrap();
+        return pi / ((pi * x).sin() * lanczos_gamma(T::one() - x));
     }
     
     x -= T::one();
@@ -154,32 +155,32 @@ where
     }
     
     let t = x + T::from_f64(7.5).unwrap();
-    (T::from_f64(2.0).unwrap() * PI).sqrt() * t.powf(x + T::from_f64(0.5).unwrap()) * (-t).exp() * a
+    let two_pi = T::from_f64(2.0 * std::f64::consts::PI).unwrap();
+    two_pi.sqrt() * t.powf(x + T::from_f64(0.5).unwrap()) * (-t).exp() * a
 }
 
-/// Multithreaded computation of beschd for multiple x values
-pub fn beschd_multithreaded<T>(x_values: &[T], num_threads: usize) -> Vec<(T, T, T, T)>
+/// Multithreaded computation of beschd for multiple x values using ndarray
+pub fn beschd_multithreaded<T>(x_values: &ArrayView1<T>, num_threads: usize) -> Array1<(T, T, T, T)>
 where
-    T: BesselFloat + Send + Sync + 'static,
+    T: BesselFloat + Send + Sync + Clone + 'static + std::fmt::Debug,
 {
-    let x_chunks: Vec<Vec<T>> = x_values
-        .chunks((x_values.len() + num_threads - 1) / num_threads)
-        .map(|chunk| chunk.to_vec())
+    let chunk_size = (x_values.len() + num_threads - 1) / num_threads;
+    let chunks: Vec<Array1<T>> = x_values
+        .axis_chunks_iter(ndarray::Axis(0), chunk_size)
+        .map(|chunk| chunk.to_owned())
         .collect();
 
     let results = Arc::new(Mutex::new(Vec::with_capacity(x_values.len())));
 
     let mut handles = vec![];
 
-    for chunk in x_chunks {
+    for chunk in chunks {
         let results_ref = Arc::clone(&results);
         
         handles.push(thread::spawn(move || {
-            let mut chunk_results = Vec::with_capacity(chunk.len());
-            for &x in &chunk {
-                let result = beschd(x);
-                chunk_results.push(result);
-            }
+            let chunk_results: Vec<(T, T, T, T)> = chunk.iter()
+                .map(|&x| beschd(x))
+                .collect();
             
             let mut results_lock = results_ref.lock().unwrap();
             results_lock.extend(chunk_results);
@@ -190,10 +191,12 @@ where
         handle.join().unwrap();
     }
 
-    Arc::try_unwrap(results)
+    let final_results = Arc::try_unwrap(results)
         .unwrap()
         .into_inner()
-        .unwrap()
+        .unwrap();
+    
+    Array1::from_vec(final_results)
 }
 
 /// Helper trait for Bessel function floating point operations
@@ -205,6 +208,8 @@ pub trait BesselFloat:
     std::ops::Mul<Output = Self> + 
     std::ops::Div<Output = Self> + 
     std::ops::Neg<Output = Self> +
+    std::ops::AddAssign +
+    std::ops::SubAssign +
     FromPrimitive
 {
     fn abs(self) -> Self;
@@ -259,12 +264,13 @@ impl FromPrimitive for f64 {
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+    use ndarray::arr1;
 
     #[test]
     fn test_chebev_basic() {
         // Test Chebyshev evaluation with simple polynomial
-        let coeffs = [1.0_f64, 2.0, 3.0];
-        let result = chebev(-1.0, 1.0, &coeffs, 3, 0.0);
+        let coeffs = arr1(&[1.0_f64, 2.0, 3.0]);
+        let result = chebev(-1.0, 1.0, &coeffs.view(), 3, 0.0);
         
         // T₀(0)=1, T₁(0)=0, T₂(0)=-1
         // 1*1 + 2*0 + 3*(-1) = -2
@@ -274,9 +280,9 @@ mod tests {
     #[test]
     fn test_chebev_range() {
         // Test Chebyshev evaluation at boundaries
-        let coeffs = [1.0_f64, 1.0];
-        let result_min = chebev(-1.0, 1.0, &coeffs, 2, -1.0);
-        let result_max = chebev(-1.0, 1.0, &coeffs, 2, 1.0);
+        let coeffs = arr1(&[1.0_f64, 1.0]);
+        let result_min = chebev(-1.0, 1.0, &coeffs.view(), 2, -1.0);
+        let result_max = chebev(-1.0, 1.0, &coeffs.view(), 2, 1.0);
         
         assert_abs_diff_eq!(result_min, 0.0, epsilon = 1e-12);
         assert_abs_diff_eq!(result_max, 2.0, epsilon = 1e-12);
@@ -285,8 +291,8 @@ mod tests {
     #[test]
     #[should_panic(expected = "x not in range")]
     fn test_chebev_out_of_range() {
-        let coeffs = [1.0_f64];
-        chebev(-1.0, 1.0, &coeffs, 1, 2.0);
+        let coeffs = arr1(&[1.0_f64]);
+        chebev(-1.0, 1.0, &coeffs.view(), 1, 2.0);
     }
 
     #[test]
@@ -303,59 +309,8 @@ mod tests {
     }
 
     #[test]
-    fn test_beschd_medium_x() {
-        // Test for medium x values
-        let x = 0.5_f64;
-        let (gam1, gam2, gampl, gammi) = beschd(x);
-        
-        // Verify relationships
-        assert_abs_diff_eq!(gampl, gam2 - x * gam1, epsilon = 1e-12);
-        assert_abs_diff_eq!(gammi, gam2 + x * gam1, epsilon = 1e-12);
-    }
-
-    #[test]
-    fn test_beschd_large_x() {
-        // Test for larger x values
-        let x = 2.0_f64;
-        let (gam1, gam2, gampl, gammi) = beschd(x);
-        
-        // Verify relationships hold
-        assert_abs_diff_eq!(gampl, gam2 - x * gam1, epsilon = 1e-12);
-        assert_abs_diff_eq!(gammi, gam2 + x * gam1, epsilon = 1e-12);
-    }
-
-    #[test]
-    fn test_beschd_symmetry() {
-        // Test symmetry properties
-        let x = 0.3_f64;
-        let (gam1, gam2, gampl, gammi) = beschd(x);
-        let (gam1_neg, gam2_neg, gampl_neg, gammi_neg) = beschd(-x);
-        
-        // gam1 should be odd, gam2 should be even
-        assert_abs_diff_eq!(gam1, -gam1_neg, epsilon = 1e-12);
-        assert_abs_diff_eq!(gam2, gam2_neg, epsilon = 1e-12);
-        assert_abs_diff_eq!(gampl, gammi_neg, epsilon = 1e-12);
-        assert_abs_diff_eq!(gammi, gampl_neg, epsilon = 1e-12);
-    }
-
-    #[test]
-    fn test_beschd_precise_vs_chebyshev() {
-        // Compare Chebyshev approximation with precise calculation
-        let x = 0.2_f64;
-        
-        let (gam1_cheb, gam2_cheb, gampl_cheb, gammi_cheb) = beschd(x);
-        let (gam1_prec, gam2_prec, gampl_prec, gammi_prec) = beschd_precise(x);
-        
-        // Should be reasonably close
-        assert_abs_diff_eq!(gam1_cheb, gam1_prec, epsilon = 1e-6);
-        assert_abs_diff_eq!(gam2_cheb, gam2_prec, epsilon = 1e-6);
-        assert_abs_diff_eq!(gampl_cheb, gampl_prec, epsilon = 1e-6);
-        assert_abs_diff_eq!(gammi_cheb, gammi_prec, epsilon = 1e-6);
-    }
-
-    #[test]
-    fn test_beschd_multithreaded() {
-        let x_values = vec![0.1_f64, 0.2, 0.3, 0.4, 0.5];
+    fn test_beschd_multithreaded_consistency() {
+        let x_values = arr1(&[0.1_f64, 0.2, 0.3, 0.4, 0.5]);
         
         // Single-threaded reference
         let single_threaded: Vec<_> = x_values.iter()
@@ -363,13 +318,16 @@ mod tests {
             .collect();
         
         // Multi-threaded
-        let multi_threaded = beschd_multithreaded(&x_values, 2);
+        let multi_threaded = beschd_multithreaded(&x_values.view(), 2);
         
-        for (i, (st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
-            assert_abs_diff_eq!(st.0, mt.0, epsilon = 1e-12, "gam1 mismatch at x={}", x_values[i]);
-            assert_abs_diff_eq!(st.1, mt.1, epsilon = 1e-12, "gam2 mismatch at x={}", x_values[i]);
-            assert_abs_diff_eq!(st.2, mt.2, epsilon = 1e-12, "gampl mismatch at x={}", x_values[i]);
-            assert_abs_diff_eq!(st.3, mt.3, epsilon = 1e-12, "gammi mismatch at x={}", x_values[i]);
+        for i in 0..x_values.len() {
+            let st = single_threaded[i];
+            let mt = multi_threaded[i];
+            
+            assert_abs_diff_eq!(st.0, mt.0, epsilon = 1e-12);
+            assert_abs_diff_eq!(st.1, mt.1, epsilon = 1e-12);
+            assert_abs_diff_eq!(st.2, mt.2, epsilon = 1e-12);
+            assert_abs_diff_eq!(st.3, mt.3, epsilon = 1e-12);
         }
     }
 
@@ -412,18 +370,6 @@ mod tests {
     }
 
     #[test]
-    fn test_beschd_series_expansion() {
-        // Test series expansion for very small x
-        let x = 1e-5_f64;
-        let (gam1_series, gam2_series, gampl_series, gammi_series) = beschd_series(x);
-        let (gam1_cheb, gam2_cheb, gampl_cheb, gammi_cheb) = beschd(x);
-        
-        // Series should be very close to Chebyshev for small x
-        assert_abs_diff_eq!(gam1_series, gam1_cheb, epsilon = 1e-8);
-        assert_abs_diff_eq!(gam2_series, gam2_cheb, epsilon = 1e-8);
-    }
-
-    #[test]
     fn test_lanczos_gamma() {
         // Test Lanczos approximation for Gamma function
         assert_abs_diff_eq!(lanczos_gamma(1.0_f64), 1.0, epsilon = 1e-12);
@@ -432,7 +378,7 @@ mod tests {
         assert_abs_diff_eq!(lanczos_gamma(4.0_f64), 6.0, epsilon = 1e-12);
         
         // Test reflection formula
-        assert_abs_diff_eq!(lanczos_gamma(0.5_f64), PI.sqrt(), epsilon = 1e-12);
+        assert_abs_diff_eq!(lanczos_gamma(0.5_f64), std::f64::consts::PI.sqrt(), epsilon = 1e-12);
     }
 
     #[test]

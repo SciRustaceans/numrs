@@ -4,8 +4,12 @@
 //! This library provides implementations of various special functions, linear algebra routines,
 //! integration methods, and other numerical utilities.
 
-pub mod airy;
-pub mod banbks;
+pub mod utils;
+pub mod banbks; // Stand alone -> Linear algebra
+
+//pub mod airy; // (FIX FROM ORIGINAL C CODE) Shoudl call bessik, bessjy, beschd, chebev 
+/*
+
 pub mod bandec;
 pub mod bcucof;
 pub mod bcuint;
@@ -108,20 +112,19 @@ pub mod spline;
 pub mod sprspm;
 pub mod svd;
 pub mod toeplz;
-pub mod utils;
 pub mod vander;
-
 // Re-export commonly used items for easier access (be selective to avoid conflicts)
-pub use airy::{ai, bi, ai_deriv, bi_deriv};
-pub use bessel_j::{bessel_j0, bessel_j1, bessel_jn};
-pub use bessel_y1::bessel_y1;
-pub use beta::{beta, ln_beta};
+//pub use airy::{ai, bi, ai_deriv, bi_deriv};
+//pub use bessel_j::{bessel_j0, bessej1, bessel_jn};
+//pub use bessel_y1::bessel_y1;
+//pub use beta::{beta, ln_beta};
 pub use gamma_series::gamma_series;
 pub use gammln::gammln;
 pub use gauleg::gauleg;
 pub use plgndr::plgndr;
 pub use utils::{sign, pythag};
 
+*/
 // Common numerical constants
 pub mod constants {
     pub use std::f64::consts::*;

@@ -1,4 +1,4 @@
-use std::f64::consts::EPSILON;
+//use std::f64::consts::EPSILON;
 
 const EPS: f64 = 1.0e-6;
 const JMAX: usize = 20;

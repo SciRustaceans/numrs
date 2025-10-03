@@ -344,22 +344,26 @@ mod tests {
         bessi(-1, 1.0_f64);
     }
 
-    #[test]
-    fn test_multithreaded_bessi() {
-        let orders = vec![0, 1, 2, 3, 4, 5];
-        let x = 2.0_f64;
-        
-        // Single-threaded reference
-        let single_threaded: Vec<f64> = orders.iter().map(|&n| bessi(n, x)).collect();
-        
-        // Multi-threaded
-        let multi_threaded = bessi_multithreaded(&orders, x, 2);
-        
-        for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
-            assert_abs_diff_eq!(st, *mt, epsilon = 1e-12, "Mismatch at order {}", orders[i]);
-        }
+#[test]
+fn test_multithreaded_bessi() {
+    let orders = vec![0, 1, 2, 3, 4, 5];
+    let x = 2.0_f64;
+    
+    // Single-threaded reference
+    let single_threaded: Vec<f64> = orders.iter().map(|&n| bessi(n, x)).collect();
+    
+    // Multi-threaded
+    let multi_threaded = bessi_multithreaded(&orders, x, 2);
+    
+    for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
+        let diff = (st - *mt).abs();
+        assert!(
+            diff < 1e-12,
+            "Mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st, mt, diff
+        );
     }
-
+}
     #[test]
     fn test_recurrence_relation() {
         // Test that I_{n+1}(x) = I_{n-1}(x) - (2n/x) I_n(x)
@@ -378,18 +382,22 @@ mod tests {
         assert_abs_diff_eq!(i3, recurrence_i3, epsilon = 1e-12);
     }
 
-    #[test]
-    fn test_consistency_between_precisions() {
-        let test_cases = [0.1, 1.0, 2.0, 5.0, 10.0];
+#[test]
+fn test_consistency_between_precisions() {
+    let test_cases = [0.1, 1.0, 2.0, 5.0, 10.0];
+    
+    for &x in &test_cases {
+        let f32_i1 = bessi1(x as f32);
+        let f64_i1 = bessi1(x as f64);
         
-        for &x in &test_cases {
-            let f32_i1 = bessi1(x as f32);
-            let f64_i1 = bessi1(x as f64);
-            
-            assert_abs_diff_eq!(f32_i1 as f64, f64_i1, epsilon = 1e-6, "Mismatch at x = {}", x);
-        }
+        let diff = (f32_i1 as f64 - f64_i1).abs();
+        assert!(
+            diff < 1e-6,
+            "Precision mismatch at x = {}: f32={}, f64={}, diff={}",
+            x, f32_i1, f64_i1, diff
+        );
     }
-
+}
     #[test]
     fn test_edge_cases() {
         // Zero argument

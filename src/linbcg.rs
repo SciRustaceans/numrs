@@ -1,4 +1,4 @@
-use std::f64::consts::EPSILON;
+use std::f64;
 use std::fmt;
 
 const EPS: f64 = 1.0e-14;

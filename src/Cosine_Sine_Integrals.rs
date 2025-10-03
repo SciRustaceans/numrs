@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt;
-use std::f64::consts::{PI, EULER};
+use std::f64::consts::{PI, E};
 use rayon::prelude::*;
 use num_complex::Complex64;
 
@@ -104,7 +104,7 @@ fn cisi_continued_fraction(t: f64) -> CiSiResult<(f64, f64)> {
 /// Series expansion for Ci and Si (small t)
 fn cisi_series_expansion(t: f64) -> CiSiResult<(f64, f64)> {
     if t < FPMIN.sqrt() {
-        return Ok((t.ln() + EULER, t));
+        return Ok((t.ln() + E, t));
     }
 
     let mut sum = 0.0;
@@ -131,7 +131,7 @@ fn cisi_series_expansion(t: f64) -> CiSiResult<(f64, f64)> {
         }
         
         if err < EPS {
-            let ci = sumc + t.ln() + EULER;
+            let ci = sumc + t.ln() + E;
             return Ok((ci, sums));
         }
         
@@ -243,7 +243,7 @@ pub fn exponential_integral_e1(x: f64) -> CiSiResult<f64> {
             sum += sign * term / k as f64;
             
             if (sum - old_sum).abs() < EPS * sum.abs() {
-                return Ok(-EULER - x.ln() + sum);
+                return Ok(-E - x.ln() + sum);
             }
             
             sign = -sign;

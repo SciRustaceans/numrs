@@ -31,7 +31,7 @@ pub fn sncndn(uu: f64, emmc: f64) -> JacobianElliptic {
         let mut dn_val = 1.0;
         let mut em = [0.0; 14];
         let mut en = [0.0; 14];
-        let mut c;
+        let mut c = 0.5*(a+em);
         let mut l = 0;
 
         // AGM sequence

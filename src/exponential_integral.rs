@@ -1,4 +1,4 @@
-use std::f64::consts::EULER;
+use std::f64::consts::E;
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
@@ -56,7 +56,7 @@ fn expint_series(n: i32, x: f64, nm1: i32) -> Result<f64, String> {
     let mut ans = if nm1 != 0 {
         1.0 / nm1 as f64
     } else {
-        -x.ln() - EULER
+        -x.ln() - E
     };
 
     let mut fact = 1.0;
@@ -67,8 +67,8 @@ fn expint_series(n: i32, x: f64, nm1: i32) -> Result<f64, String> {
         let del = if i as i32 != nm1 {
             -fact / (i as f64 - nm1 as f64)
         } else {
-            // Compute psi(n) = H_{n-1} - EULER
-            let psi = harmonic_number(nm1) - EULER;
+            // Compute psi(n) = H_{n-1} - E
+            let psi = harmonic_number(nm1) - E;
             fact * (-x.ln() + psi)
         };
 

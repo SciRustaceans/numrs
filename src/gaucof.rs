@@ -371,14 +371,20 @@ mod tests {
         assert_abs_diff_eq!(x[0], -x[4], epsilon = 1e-10);
     }
 
-    #[test]
-    fn test_gauss_hermite_generator() {
-        let (x, w) = GaussQuadratureGenerator::gauss_hermite(5).unwrap();
-        
-        // Check basic properties
-        let sum_weights: f64 = w.iter().sum();
-        assert_abs_diff_eq!(sum_weights, std::f64::consts::PI.sqrt(), epsilon = 1e-10);
-    }
+       #[test]
+        fn test_gauss_hermite_generator() {
+            let (x, w) = GaussQuadratureGenerator::gauss_hermite(5).unwrap();
+            
+            // Check basic properties
+            let sum_weights: f64 = w.iter().sum();
+            let expected_sum = std::f64::consts::PI.sqrt();
+            let diff = (sum_weights - expected_sum).abs();
+            assert!(
+                diff < 1e-10,
+                "Weight sum failed: sum={}, expected={}, diff={}",
+                sum_weights, expected_sum, diff
+            );
+        } 
 
     #[test]
     fn test_gauss_laguerre_generator() {
@@ -453,7 +459,12 @@ mod tests {
                 .map(|(&x, &w)| w * x.powi(degree as i32))
                 .sum();
             
-            assert_abs_diff_eq!(computed, exact, epsilon = 1e-10, "Failed for degree {}", degree);
+            let diff = (computed - exact).abs();
+            assert!(
+                diff < 1e-10,
+                "Failed for degree {}: computed={}, exact = {}, diff = {}",
+                degree, computed, exact, diff
+        );
         }
     }
 

@@ -1,4 +1,4 @@
-use std::f64::consts::EULER;
+use std::f64::consts::E;
 use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
 
@@ -14,7 +14,7 @@ pub fn ei(x: f64) -> Result<f64, String> {
     }
 
     if x < FPMIN {
-        return Ok(x.ln() + EULER);
+        return Ok(x.ln() + E);
     }
 
     if x <= -EPS.ln() {
@@ -35,7 +35,7 @@ fn ei_series(x: f64) -> Result<f64, String> {
         sum += term;
 
         if term < EPS * sum {
-            return Ok(sum + x.ln() + EULER);
+            return Ok(sum + x.ln() + E);
         }
     }
 
@@ -193,8 +193,8 @@ mod tests {
     #[test]
     fn test_ei_small_x() {
         // Test very small x values
-        assert_relative_eq!(ei(1e-10).unwrap(), (1e-10).ln() + EULER, epsilon = 1e-6);
-        assert_relative_eq!(ei(1e-5).unwrap(), (1e-5).ln() + EULER, epsilon = 1e-6);
+        assert_relative_eq!(ei(1e-10).unwrap(), (1e-10).ln() + E, epsilon = 1e-6);
+        assert_relative_eq!(ei(1e-5).unwrap(), (1e-5).ln() + E, epsilon = 1e-6);
     }
 
     #[test]

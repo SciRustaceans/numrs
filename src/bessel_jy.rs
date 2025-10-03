@@ -505,27 +505,53 @@ mod tests {
         assert_abs_diff_eq!(yp, yp_approx, epsilon = 1e-6);
     }
 
-    #[test]
-    fn test_bessjy_multithreaded() {
-        let orders = vec![0.0_f64, 1.0, 2.0, 3.0];
-        let x = 2.0_f64;
+#[test]
+fn test_bessjy_multithreaded() {
+    let orders = vec![0.0_f64, 1.0, 2.0, 3.0];
+    let x = 2.0_f64;
+    
+    // Single-threaded reference
+    let single_threaded: Vec<_> = orders.iter()
+        .map(|&nu| bessjy(x, nu))
+        .collect();
+    
+    // Multi-threaded
+    let multi_threaded = bessjy_multithreaded(&orders, x, 2);
+    
+    for (i, (st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
+        // Check J (Bessel function of first kind)
+        let j_diff = (st.0 - mt.0).abs();
+        assert!(
+            j_diff < 1e-12,
+            "J mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st.0, mt.0, j_diff
+        );
         
-        // Single-threaded reference
-        let single_threaded: Vec<_> = orders.iter()
-            .map(|&nu| bessjy(x, nu))
-            .collect();
+        // Check Y (Bessel function of second kind)
+        let y_diff = (st.1 - mt.1).abs();
+        assert!(
+            y_diff < 1e-12,
+            "Y mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st.1, mt.1, y_diff
+        );
         
-        // Multi-threaded
-        let multi_threaded = bessjy_multithreaded(&orders, x, 2);
+        // Check J' (derivative of first kind)
+        let j_prime_diff = (st.2 - mt.2).abs();
+        assert!(
+            j_prime_diff < 1e-12,
+            "J' mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st.2, mt.2, j_prime_diff
+        );
         
-        for (i, (st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
-            assert_abs_diff_eq!(st.0, mt.0, epsilon = 1e-12, "J mismatch at order {}", orders[i]);
-            assert_abs_diff_eq!(st.1, mt.1, epsilon = 1e-12, "Y mismatch at order {}", orders[i]);
-            assert_abs_diff_eq!(st.2, mt.2, epsilon = 1e-12, "J' mismatch at order {}", orders[i]);
-            assert_abs_diff_eq!(st.3, mt.3, epsilon = 1e-12, "Y' mismatch at order {}", orders[i]);
-        }
+        // Check Y' (derivative of second kind)
+        let y_prime_diff = (st.3 - mt.3).abs();
+        assert!(
+            y_prime_diff < 1e-12,
+            "Y' mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st.3, mt.3, y_prime_diff
+        );
     }
-
+} 
     #[test]
     fn test_bessjy_precision_consistency() {
         // Test consistency between f32 and f64

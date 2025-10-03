@@ -1,18 +1,15 @@
-use std::f64::consts::PI;
 use rayon::prelude::*;
+use std::f64::consts::PI;
 // Try importing like this instead:
-use crate::ndarray::{Array1, ArrayView, ArrayViewMut, s};/// Convolution/Deconvolution implementation with FFT optimization
+use ndarray::prelude::*;
+/// Convolution/Deconvolution implementation with FFT optimization
 
 /// Supports both convolution (isign=1) and deconvolution (isign=-1)
-pub fn convlv(
-    data: &[f64],
-    respns: &[f64],
-    isign: i32,
-) -> Result<Array1<f64>, ConvlvError> {
+pub fn convlv(data: &[f64], respns: &[f64], isign: i32) -> Result<Array1<f64>, ConvlvError> {
     // Validate inputs
     let n = data.len();
     let m = respns.len();
-    
+
     if n == 0 || m == 0 {
         return Err(ConvlvError::EmptyInput);
     }
@@ -41,14 +38,9 @@ pub fn convlv(
 }
 
 /// Prepare the response function with zero-padding and proper alignment
-fn prepare_response_function(
-    respns_padded: &mut Array1<f64>,
-    respns: &[f64],
-    n: usize,
-    m: usize,
-) {
+fn prepare_response_function(respns_padded: &mut Array1<f64>, respns: &[f64], n: usize, m: usize) {
     let mid_point = (m - 1) / 2;
-    
+
     // Copy response function with wrap-around for circular convolution
     respns_padded
         .par_chunks_mut(1)
@@ -71,19 +63,25 @@ fn prepare_response_function(
 }
 
 /// Compute FFTs of data and response function in parallel
-fn compute_parallel_ffts(data: &[f64], respns_padded: &Array1<f64>, n: usize) -> (Array1<f64>, Array1<f64>) {
+fn compute_parallel_ffts(
+    data: &[f64],
+    respns_padded: &Array1<f64>,
+    n: usize,
+) -> (Array1<f64>, Array1<f64>) {
     let (data_fft, respns_fft) = rayon::join(
         || compute_fft(data, n),
         || compute_fft(respns_padded.as_slice().unwrap(), n),
     );
-    
+
     (data_fft, respns_fft)
 }
 
 /// Compute FFT with optimization
 fn compute_fft(input: &[f64], n: usize) -> Array1<f64> {
     let mut output = Array1::zeros(2 * n);
-    output.slice_mut(s![..n]).assign(&Array1::from_vec(input.to_vec()));
+    output
+        .slice_mut(s![..n])
+        .assign(&Array1::from_vec(input.to_vec()));
     realft(&mut output, n, 1);
     output
 }
@@ -123,8 +121,10 @@ fn process_frequency_domain(
                         ans_chunk[0] = 0.0;
                         ans_chunk[1] = 0.0;
                     } else {
-                        ans_chunk[0] = (data_re * respns_re + data_im * respns_im) / mag2 / no2 as f64;
-                        ans_chunk[1] = (data_im * respns_re - data_re * respns_im) / mag2 / no2 as f64;
+                        ans_chunk[0] =
+                            (data_re * respns_re + data_im * respns_im) / mag2 / no2 as f64;
+                        ans_chunk[1] =
+                            (data_im * respns_re - data_re * respns_im) / mag2 / no2 as f64;
                     }
                 }
             }
@@ -150,7 +150,7 @@ fn process_frequency_domain_optimized(
     // Process in chunks for better cache performance
     for chunk_start in (1..n).step_by(4) {
         let chunk_end = (chunk_start + 4).min(n);
-        
+
         for i in chunk_start..chunk_end {
             let idx = 2 * i;
             let data_re = data_fft[idx];
@@ -170,7 +170,8 @@ fn process_frequency_domain_optimized(
                     ans_fft[idx + 1] = 0.0;
                 } else {
                     ans_fft[idx] = (data_re * respns_re + data_im * respns_im) / mag2 / no2 as f64;
-                    ans_fft[idx + 1] = (data_im * respns_re - data_re * respns_im) / mag2 / no2 as f64;
+                    ans_fft[idx + 1] =
+                        (data_im * respns_re - data_re * respns_im) / mag2 / no2 as f64;
                 }
             }
         }
@@ -185,16 +186,23 @@ fn process_frequency_domain_optimized(
 
 /// Complex division function (replaces missing complex_divide_simd)
 #[inline(always)]
-fn complex_divide(numerator_real: f64, numerator_imag: f64, 
-                  denominator_real: f64, denominator_imag: f64) -> (f64, f64) {
-    let denominator_norm = denominator_real * denominator_real + denominator_imag * denominator_imag;
+fn complex_divide(
+    numerator_real: f64,
+    numerator_imag: f64,
+    denominator_real: f64,
+    denominator_imag: f64,
+) -> (f64, f64) {
+    let denominator_norm =
+        denominator_real * denominator_real + denominator_imag * denominator_imag;
     if denominator_norm == 0.0 {
         return (0.0, 0.0);
     }
-    
-    let real = (numerator_real * denominator_real + numerator_imag * denominator_imag) / denominator_norm;
-    let imag = (numerator_imag * denominator_real - numerator_real * denominator_imag) / denominator_norm;
-    
+
+    let real =
+        (numerator_real * denominator_real + numerator_imag * denominator_imag) / denominator_norm;
+    let imag =
+        (numerator_imag * denominator_real - numerator_real * denominator_imag) / denominator_norm;
+
     (real, imag)
 }
 
@@ -203,7 +211,7 @@ fn complex_divide(numerator_real: f64, numerator_imag: f64,
 fn complex_multiply(a_real: f64, a_imag: f64, b_real: f64, b_imag: f64) -> (f64, f64) {
     let real = a_real * b_real - a_imag * b_imag;
     let imag = a_real * b_imag + a_imag * b_real;
-    
+
     (real, imag)
 }
 
@@ -254,31 +262,41 @@ impl ConvlvProcessor {
             parallel_threshold: 1024,
         }
     }
-    
+
     pub fn with_optimized(mut self, use_optimized: bool) -> Self {
         self.use_optimized = use_optimized;
         self
     }
-    
+
     pub fn with_threshold(mut self, threshold: usize) -> Self {
         self.parallel_threshold = threshold;
         self
     }
-    
-    pub fn process(&self, data: &[f64], respns: &[f64], isign: i32) -> Result<Array1<f64>, ConvlvError> {
+
+    pub fn process(
+        &self,
+        data: &[f64],
+        respns: &[f64],
+        isign: i32,
+    ) -> Result<Array1<f64>, ConvlvError> {
         let n = data.len();
-        
+
         if self.use_optimized && n >= self.parallel_threshold {
             self.convlv_optimized(data, respns, isign)
         } else {
             convlv(data, respns, isign)
         }
     }
-    
-    fn convlv_optimized(&self, data: &[f64], respns: &[f64], isign: i32) -> Result<Array1<f64>, ConvlvError> {
+
+    fn convlv_optimized(
+        &self,
+        data: &[f64],
+        respns: &[f64],
+        isign: i32,
+    ) -> Result<Array1<f64>, ConvlvError> {
         let n = data.len();
         let m = respns.len();
-        
+
         if n == 0 || m == 0 {
             return Err(ConvlvError::EmptyInput);
         }
@@ -306,8 +324,13 @@ impl ConvlvProcessor {
         // Normalize and return result
         Ok(ans_fft.slice(s![..n]).to_owned())
     }
-    
-    pub fn process_batch(&self, data_batch: &[&[f64]], respns: &[f64], isign: i32) -> Result<Vec<Array1<f64>>, ConvlvError> {
+
+    pub fn process_batch(
+        &self,
+        data_batch: &[&[f64]],
+        respns: &[f64],
+        isign: i32,
+    ) -> Result<Vec<Array1<f64>>, ConvlvError> {
         data_batch
             .par_iter()
             .map(|data| self.process(data, respns, isign))
@@ -324,15 +347,15 @@ mod tests {
     fn test_convolution_basic() -> Result<(), ConvlvError> {
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let respns = vec![1.0, 1.0];
-        
+
         let result = convlv(&data, &respns, 1)?;
-        
+
         // Expected: [1*1, 1*2+1*1, 1*3+1*2, 1*4+1*3] = [1, 3, 5, 7]
         assert_relative_eq!(result[0], 1.0, epsilon = 1e-10);
         assert_relative_eq!(result[1], 3.0, epsilon = 1e-10);
         assert_relative_eq!(result[2], 5.0, epsilon = 1e-10);
         assert_relative_eq!(result[3], 7.0, epsilon = 1e-10);
-        
+
         Ok(())
     }
 
@@ -340,15 +363,15 @@ mod tests {
     fn test_deconvolution() -> Result<(), ConvlvError> {
         let data = vec![1.0, 3.0, 5.0, 7.0];
         let respns = vec![1.0, 1.0];
-        
+
         let result = convlv(&data, &respns, -1)?;
-        
+
         // Should recover original [1, 2, 3, 4]
         assert_relative_eq!(result[0], 1.0, epsilon = 1e-10);
         assert_relative_eq!(result[1], 2.0, epsilon = 1e-10);
         assert_relative_eq!(result[2], 3.0, epsilon = 1e-10);
         assert_relative_eq!(result[3], 4.0, epsilon = 1e-10);
-        
+
         Ok(())
     }
 
@@ -357,11 +380,11 @@ mod tests {
         let (real, imag) = complex_divide(1.0, 0.0, 1.0, 0.0);
         assert_relative_eq!(real, 1.0, epsilon = 1e-10);
         assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
-        
+
         let (real, imag) = complex_divide(1.0, 1.0, 1.0, 1.0);
         assert_relative_eq!(real, 1.0, epsilon = 1e-10);
         assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
-        
+
         // Test division by zero handling
         let (real, imag) = complex_divide(1.0, 1.0, 0.0, 0.0);
         assert_relative_eq!(real, 0.0, epsilon = 1e-10);
@@ -373,7 +396,7 @@ mod tests {
         let (real, imag) = complex_multiply(1.0, 0.0, 1.0, 0.0);
         assert_relative_eq!(real, 1.0, epsilon = 1e-10);
         assert_relative_eq!(imag, 0.0, epsilon = 1e-10);
-        
+
         let (real, imag) = complex_multiply(1.0, 1.0, 1.0, 1.0);
         assert_relative_eq!(real, 0.0, epsilon = 1e-10); // (1+1i)*(1+1i) = 0+2i
         assert_relative_eq!(imag, 2.0, epsilon = 1e-10);
@@ -382,14 +405,17 @@ mod tests {
     #[test]
     fn test_error_handling() {
         // Test empty input
-        assert!(matches!(convlv(&[], &[1.0], 1), Err(ConvlvError::EmptyInput)));
-        
+        assert!(matches!(
+            convlv(&[], &[1.0], 1),
+            Err(ConvlvError::EmptyInput)
+        ));
+
         // Test response too long
         assert!(matches!(
             convlv(&[1.0, 2.0], &[1.0, 2.0, 3.0], 1),
             Err(ConvlvError::ResponseTooLong)
         ));
-        
+
         // Test invalid isign
         assert!(matches!(
             convlv(&[1.0, 2.0], &[1.0], 0),
@@ -399,18 +425,19 @@ mod tests {
 
     #[test]
     fn test_batch_processing() -> Result<(), ConvlvError> {
-        let batch = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![4.0, 5.0, 6.0],
-        ];
+        let batch = vec![vec![1.0, 2.0, 3.0], vec![4.0, 5.0, 6.0]];
         let respns = vec![1.0, 1.0];
-        
-        let results = convlv_batch(&batch.iter().map(|v| v.as_slice()).collect::<Vec<_>>(), &respns, 1)?;
-        
+
+        let results = convlv_batch(
+            &batch.iter().map(|v| v.as_slice()).collect::<Vec<_>>(),
+            &respns,
+            1,
+        )?;
+
         assert_eq!(results.len(), 2);
         assert_relative_eq!(results[0][1], 3.0, epsilon = 1e-10); // 1+2
         assert_relative_eq!(results[1][1], 9.0, epsilon = 1e-10); // 4+5
-        
+
         Ok(())
     }
 
@@ -419,9 +446,9 @@ mod tests {
         let processor = ConvlvProcessor::new();
         let data = vec![1.0, 2.0, 3.0, 4.0];
         let respns = vec![1.0, 1.0];
-        
+
         let result = processor.process(&data, &respns, 1)?;
-        
+
         assert_relative_eq!(result[1], 3.0, epsilon = 1e-10);
         Ok(())
     }

@@ -69,9 +69,9 @@ pub unsafe fn pccheb_unsafe(d: *const f64, c: *mut f64, n: usize) {
     let mut pow = 1.0;
     
     for k in 1..n {
+        let mut fac = unsafe{ *d.add(k) / pow};
         unsafe {
             *c.add(k) = 0.0;
-            let mut fac = *d.add(k) / pow;
         }
         
         let mut j = k;

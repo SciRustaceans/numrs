@@ -1,6 +1,6 @@
-use std::f64::consts::{PI, FRAC_PI_2};
-use std::sync::{Arc, Mutex};
 use rayon::prelude::*;
+use std::f64::consts::{FRAC_PI_2, PI};
+use std::sync::{Arc, Mutex};
 
 const RTPIO2: f64 = FRAC_PI_2.sqrt(); // √(π/2) ≈ 1.253314137
 
@@ -16,18 +16,18 @@ fn gamma(x: f64) -> f64 {
         12.507343278686905,
         -0.13857109526572012,
     ];
-    
+
     if x <= 0.0 {
         return f64::NAN;
     }
-    
-    let mut x = x - 1.0;
+
+    let x = x - 1.0;
     let mut t = COEFFS[0];
-    
+
     for (i, &coeff) in COEFFS.iter().enumerate().skip(1) {
         t += coeff / (x + i as f64);
     }
-    
+
     let sqrt_2pi = (2.0 * PI).sqrt();
     (sqrt_2pi * t).ln().exp() * (x + 0.5).powf(x + 0.5) * (-x - 0.5).exp()
 }
@@ -40,16 +40,16 @@ fn bessj_series(x: f64, xnu: f64) -> (f64, f64) {
     let x2 = x * x / 4.0;
     let mut term = 1.0;
     let gamma_nu = gamma(xnu + 1.0);
-    
+
     for k in 0..20 {
         term *= -x2 / ((k as f64 + 1.0) * (k as f64 + xnu + 1.0));
         sum += term;
         sum_deriv += (2.0 * k as f64 + xnu + 1.0) * term / x;
     }
-    
+
     let j = (x / 2.0).powf(xnu) * sum / gamma_nu;
     let jp = (x / 2.0).powf(xnu - 1.0) * sum_deriv / (2.0 * gamma_nu);
-    
+
     (j, jp)
 }
 
@@ -61,7 +61,7 @@ fn bessj_asymptotic(x: f64, xnu: f64) -> (f64, f64) {
     let mut p = 1.0;
     let mut q = 0.0;
     let mut term = 1.0;
-    
+
     for k in 1..10 {
         term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
         if k % 2 == 0 {
@@ -70,13 +70,13 @@ fn bessj_asymptotic(x: f64, xnu: f64) -> (f64, f64) {
             q += term;
         }
     }
-    
+
     let phase = z - xnu * PI / 2.0 - PI / 4.0;
     let (sin_phase, cos_phase) = phase.sin_cos();
-    
+
     let j = (2.0 / (PI * z)).sqrt() * (p * cos_phase - q * sin_phase);
     let jp = -(2.0 / (PI * z)).sqrt() * (p * sin_phase + q * cos_phase);
-    
+
     (j, jp)
 }
 
@@ -88,7 +88,7 @@ fn bessy_asymptotic(x: f64, xnu: f64) -> (f64, f64) {
     let mut p = 1.0;
     let mut q = 0.0;
     let mut term = 1.0;
-    
+
     for k in 1..10 {
         term *= (mu - (2.0 * k as f64 - 1.0).powi(2)) / (8.0 * z * k as f64);
         if k % 2 == 0 {
@@ -97,13 +97,13 @@ fn bessy_asymptotic(x: f64, xnu: f64) -> (f64, f64) {
             q += term;
         }
     }
-    
+
     let phase = z - xnu * PI / 2.0 - PI / 4.0;
     let (sin_phase, cos_phase) = phase.sin_cos();
-    
+
     let y = (2.0 / (PI * z)).sqrt() * (p * sin_phase + q * cos_phase);
     let yp = (2.0 / (PI * z)).sqrt() * (p * cos_phase - q * sin_phase);
-    
+
     (y, yp)
 }
 
@@ -112,11 +112,11 @@ fn bessjy(x: f64, xnu: f64) -> Result<(f64, f64, f64, f64), String> {
     if x <= 0.0 || xnu < 0.0 {
         return Err("Invalid arguments in bessjy".to_string());
     }
-    
+
     if x < 2.0 {
         // For small x, use series expansion
         let (j, jp) = bessj_series(x, xnu);
-        
+
         // For Y_ν, we need to handle the case carefully near x=0
         if x < 1e-8 {
             if xnu == 0.0 {
@@ -152,14 +152,14 @@ pub fn sphbes(n: i32, x: f64) -> Result<(f64, f64, f64, f64), String> {
 
     let order = n as f64 + 0.5;
     let (rj, ry, rjp, ryp) = bessjy(x, order)?;
-    
+
     let factor = RTPIO2 / x.sqrt();
-    
+
     let sj = factor * rj;
     let sy = factor * ry;
     let sjp = factor * rjp - sj / (2.0 * x);
     let syp = factor * ryp - sy / (2.0 * x);
-    
+
     Ok((sj, sy, sjp, syp))
 }
 
@@ -218,7 +218,7 @@ impl SphericalBesselCache {
         // Use quantized x values for caching to avoid floating point precision issues
         let x_quantized = (x * 1_000_000.0).round() as u64;
         let key = (n, x_quantized);
-        
+
         {
             let cache = self.cache.lock().unwrap();
             if let Some(&result) = cache.get(&key) {
@@ -227,12 +227,12 @@ impl SphericalBesselCache {
         }
 
         let result = sphbes(n, x)?;
-        
+
         {
             let mut cache = self.cache.lock().unwrap();
             cache.insert(key, result);
         }
-        
+
         Ok(result)
     }
 
@@ -250,27 +250,29 @@ impl SphericalBesselCache {
 }
 
 /// Parallel batch computation for multiple orders at fixed x
-pub fn sphbes_batch_n_parallel(n_values: &[i32], x: f64) -> Vec<Result<(f64, f64, f64, f64), String>> {
-    n_values.par_iter()
-        .map(|&n| sphbes(n, x))
-        .collect()
+pub fn sphbes_batch_n_parallel(
+    n_values: &[i32],
+    x: f64,
+) -> Vec<Result<(f64, f64, f64, f64), String>> {
+    n_values.par_iter().map(|&n| sphbes(n, x)).collect()
 }
 
 /// Parallel batch computation for multiple x values at fixed order
-pub fn sphbes_batch_x_parallel(n: i32, x_values: &[f64]) -> Vec<Result<(f64, f64, f64, f64), String>> {
-    x_values.par_iter()
-        .map(|&x| sphbes(n, x))
-        .collect()
+pub fn sphbes_batch_x_parallel(
+    n: i32,
+    x_values: &[f64],
+) -> Vec<Result<(f64, f64, f64, f64), String>> {
+    x_values.par_iter().map(|&x| sphbes(n, x)).collect()
 }
 
 /// Compute spherical Bessel functions for a grid of values
-pub fn sphbes_grid_parallel(n_values: &[i32], x_values: &[f64]) -> Vec<Vec<Result<(f64, f64, f64, f64), String>>> {
-    n_values.par_iter()
-        .map(|&n| {
-            x_values.iter()
-                .map(|&x| sphbes(n, x))
-                .collect()
-        })
+pub fn sphbes_grid_parallel(
+    n_values: &[i32],
+    x_values: &[f64],
+) -> Vec<Vec<Result<(f64, f64, f64, f64), String>>> {
+    n_values
+        .par_iter()
+        .map(|&n| x_values.iter().map(|&x| sphbes(n, x)).collect())
         .collect()
 }
 
@@ -281,7 +283,7 @@ pub fn sphbes_j_ratio(n: i32, x: f64) -> Result<f64, String> {
     }
     let j_n = sphbes_j(n, x)?;
     let j_n_minus_1 = sphbes_j(n - 1, x)?;
-    
+
     if j_n_minus_1.abs() < 1e-12 {
         Err("Division by zero near zeros of j_{n-1}".to_string())
     } else {
@@ -296,7 +298,7 @@ pub fn sphbes_y_ratio(n: i32, x: f64) -> Result<f64, String> {
     }
     let y_n = sphbes_y(n, x)?;
     let y_n_minus_1 = sphbes_y(n - 1, x)?;
-    
+
     if y_n_minus_1.abs() < 1e-12 {
         Err("Division by zero near zeros of y_{n-1}".to_string())
     } else {
@@ -309,11 +311,11 @@ pub fn sphbes_wronskian(n: i32, x: f64) -> Result<f64, String> {
     if x <= 0.0 {
         return Err("x must be positive".to_string());
     }
-    
+
     let (j_n, y_n, jp_n, yp_n) = sphbes(n, x)?;
     let wronskian = j_n * yp_n - jp_n * y_n;
-    let expected = 1.0 / (x * x);
-    
+    let ndim = 1.0 / (x * x);
+
     // Return the actual wronskian value
     Ok(wronskian)
 }
@@ -327,8 +329,8 @@ pub fn riccati_bessel(n: i32, x: f64) -> Result<(f64, f64), String> {
 /// Derivatives of Riccati-Bessel functions
 pub fn riccati_bessel_derivatives(n: i32, x: f64) -> Result<(f64, f64), String> {
     let (j_n, y_n, jp_n, yp_n) = sphbes(n, x)?;
-    let psi_n = x * j_n;
-    let chi_n = x * y_n;
+    let _psi_n = x * j_n;
+    let _chi_n = x * y_n;
     let psi_p = j_n + x * jp_n;
     let chi_p = y_n + x * yp_n;
     Ok((psi_p, chi_p))
@@ -341,7 +343,8 @@ pub fn sphbes_j_zeros(n: i32, k: usize) -> Vec<f64> {
         .map(|i| {
             let beta = (i as f64 + n_f64 / 2.0 - 0.25) * PI;
             let mu = 4.0 * n_f64 * n_f64;
-            beta - (mu - 1.0) / (8.0 * beta) - (4.0 * (mu - 1.0) * (7.0 * mu - 31.0)) / (384.0 * beta.powi(3))
+            beta - (mu - 1.0) / (8.0 * beta)
+                - (4.0 * (mu - 1.0) * (7.0 * mu - 31.0)) / (384.0 * beta.powi(3))
         })
         .collect()
 }
@@ -353,7 +356,8 @@ pub fn sphbes_y_zeros(n: i32, k: usize) -> Vec<f64> {
         .map(|i| {
             let beta = (i as f64 + n_f64 / 2.0 - 0.75) * PI;
             let mu = 4.0 * n_f64 * n_f64;
-            beta - (mu - 1.0) / (8.0 * beta) - (4.0 * (mu - 1.0) * (7.0 * mu - 31.0)) / (384.0 * beta.powi(3))
+            beta - (mu - 1.0) / (8.0 * beta)
+                - (4.0 * (mu - 1.0) * (7.0 * mu - 31.0)) / (384.0 * beta.powi(3))
         })
         .collect()
 }
@@ -363,20 +367,20 @@ pub fn sphbes_asymptotic_large_x(n: i32, x: f64) -> (f64, f64, f64, f64) {
     let n_f64 = n as f64;
     let phase = x - (n_f64 + 0.5) * PI / 2.0;
     let (sin_phase, cos_phase) = phase.sin_cos();
-    
+
     let amplitude = 1.0 / x;
     let j = amplitude * cos_phase;
     let y = amplitude * sin_phase;
     let jp = -amplitude * sin_phase - amplitude * cos_phase / x;
     let yp = amplitude * cos_phase - amplitude * sin_phase / x;
-    
+
     (j, y, jp, yp)
 }
 
 /// Asymptotic expansion for small x
 pub fn sphbes_asymptotic_small_x(n: i32, x: f64) -> (f64, f64, f64, f64) {
     let n_f64 = n as f64;
-    
+
     if n == 0 {
         let j = 1.0 - x * x / 6.0;
         let y = -1.0 / x - x / 2.0 * (x.ln() + 0.57721566490153286060);
@@ -385,12 +389,15 @@ pub fn sphbes_asymptotic_small_x(n: i32, x: f64) -> (f64, f64, f64, f64) {
         (j, y, jp, yp)
     } else {
         let factorial = gamma(n_f64 + 1.0);
-        let j = x.powi(n) / ((2.0 * n_f64 + 1.0) * factorial) * (1.0 - x * x / (2.0 * (2.0 * n_f64 + 3.0)));
-        let y = -((2.0 * n_f64 - 1.0) as f64) * factorial / PI * x.powi(-n - 1) * (1.0 + x * x / (2.0 * (1.0 - 2.0 * n_f64)));
-        
+        let j = x.powi(n) / ((2.0 * n_f64 + 1.0) * factorial)
+            * (1.0 - x * x / (2.0 * (2.0 * n_f64 + 3.0)));
+        let y = -((2.0 * n_f64 - 1.0) as f64) * factorial / PI
+            * x.powi(-n - 1)
+            * (1.0 + x * x / (2.0 * (1.0 - 2.0 * n_f64)));
+
         let jp = n_f64 * x.powi(n - 1) / ((2.0 * n_f64 + 1.0) * factorial);
         let yp = (n_f64 + 1.0) * (2.0 * n_f64 - 1.0) * factorial / PI * x.powi(-n - 2);
-        
+
         (j, y, jp, yp)
     }
 }
@@ -404,11 +411,11 @@ mod tests {
     fn test_sphbes_basic() {
         // Test known values for n = 0
         let (j0, y0, jp0, yp0) = sphbes(0, 1.0).unwrap();
-        
+
         // j0(x) = sin(x)/x, y0(x) = -cos(x)/x
         assert_relative_eq!(j0, 1.0f64.sin() / 1.0, epsilon = 1e-10);
         assert_relative_eq!(y0, -1.0f64.cos() / 1.0, epsilon = 1e-8); // Relaxed epsilon for y0
-        
+
         // Test derivatives
         let jp0_exact = (1.0f64.cos() / 1.0 - 1.0f64.sin() / (1.0 * 1.0));
         let yp0_exact = (1.0f64.sin() / 1.0 + 1.0f64.cos() / (1.0 * 1.0));
@@ -420,11 +427,11 @@ mod tests {
     fn test_sphbes_n1() {
         // Test n = 1
         let (j1, y1, jp1, yp1) = sphbes(1, 1.0).unwrap();
-        
+
         // j1(x) = sin(x)/x² - cos(x)/x
         let j1_exact = 1.0f64.sin() / 1.0.powi(2) - 1.0f64.cos() / 1.0;
         assert_relative_eq!(j1, j1_exact, epsilon = 1e-10);
-        
+
         // y1(x) = -cos(x)/x² - sin(x)/x
         let y1_exact = -1.0f64.cos() / 1.0.powi(2) - 1.0f64.sin() / 1.0;
         assert_relative_eq!(y1, y1_exact, epsilon = 1e-8);
@@ -443,7 +450,7 @@ mod tests {
         let y0 = sphbes_y(0, 1.0).unwrap();
         let jp0 = sphbes_jp(0, 1.0).unwrap();
         let yp0 = sphbes_yp(0, 1.0).unwrap();
-        
+
         assert_relative_eq!(j0, 1.0f64.sin() / 1.0, epsilon = 1e-10);
         assert_relative_eq!(y0, -1.0f64.cos() / 1.0, epsilon = 1e-8);
     }
@@ -453,7 +460,7 @@ mod tests {
         let ratio_j = sphbes_j_ratio(1, 1.0).unwrap();
         let j1 = sphbes_j(1, 1.0).unwrap();
         let j0 = sphbes_j(0, 1.0).unwrap();
-        
+
         assert_relative_eq!(ratio_j, j1 / j0, epsilon = 1e-10);
     }
 
@@ -476,7 +483,7 @@ mod tests {
         let zeros = sphbes_j_zeros(0, 3);
         // First zeros of j0(x): π, 2π, 3π, ...
         let expected = [PI, 2.0 * PI, 3.0 * PI];
-        
+
         for (i, &zero) in zeros.iter().enumerate() {
             assert_relative_eq!(zero, expected[i], epsilon = 0.1); // McMahon's formula is approximate
         }
@@ -486,9 +493,9 @@ mod tests {
     fn test_parallel_batch() {
         let n_values = [0, 1, 2];
         let x = 1.0;
-        
+
         let results = sphbes_batch_n_parallel(&n_values, x);
-        
+
         for (i, result) in results.iter().enumerate() {
             assert!(result.is_ok());
             let expected = sphbes(n_values[i], x).unwrap();
@@ -499,10 +506,10 @@ mod tests {
     #[test]
     fn test_cache_functionality() {
         let cache = SphericalBesselCache::new();
-        
+
         let result1 = cache.get(0, 1.0).unwrap();
         let result2 = cache.get(0, 1.0).unwrap(); // Should be cached
-        
+
         assert_relative_eq!(result1.0, result2.0, epsilon = 1e-10);
         assert_relative_eq!(result1.1, result2.1, epsilon = 1e-10);
         assert_eq!(cache.len(), 1);
@@ -513,14 +520,16 @@ mod tests {
         // Test large x asymptotic
         let (j_asym, y_asym, jp_asym, yp_asym) = sphbes_asymptotic_large_x(2, 10.0);
         let (j_exact, y_exact, jp_exact, yp_exact) = sphbes(2, 10.0).unwrap();
-        
+
         assert_relative_eq!(j_asym, j_exact, epsilon = 0.01);
         assert_relative_eq!(y_asym, y_exact, epsilon = 0.01);
-        
+
         // Test small x asymptotic
-        let (j_asym_small, y_asym_small, jp_asym_small, yp_asym_small) = sphbes_asymptotic_small_x(1, 0.1);
-        let (j_exact_small, y_exact_small, jp_exact_small, yp_exact_small) = sphbes(1, 0.1).unwrap();
-        
+        let (j_asym_small, y_asym_small, jp_asym_small, yp_asym_small) =
+            sphbes_asymptotic_small_x(1, 0.1);
+        let (j_exact_small, y_exact_small, jp_exact_small, yp_exact_small) =
+            sphbes(1, 0.1).unwrap();
+
         assert_relative_eq!(j_asym_small, j_exact_small, epsilon = 0.01);
     }
 }

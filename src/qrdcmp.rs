@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt;
-use std::f64::consts::EPSILON as F64_EPSILON;
+use std::f64;
 
 const EPS: f32 = 1.0e-10;
 

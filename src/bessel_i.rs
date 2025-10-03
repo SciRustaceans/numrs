@@ -427,22 +427,26 @@ mod tests {
         assert_abs_diff_eq!(recurrence_value2, expected2, epsilon = 1e-12);
     }
 
-    #[test]
-    fn test_bessi_multithreaded_basic() {
-        let orders = vec![2, 3, 4, 5];
-        let x = 2.0_f64;
-        
-        // Single-threaded reference
-        let single_threaded: Vec<f64> = orders.iter().map(|&n| bessi(n, x)).collect();
-        
-        // Multi-threaded
-        let multi_threaded = bessi_multithreaded(&orders, x, 2);
-        
-        for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
-            assert_abs_diff_eq!(st, *mt, epsilon = 1e-12, "Mismatch at order {}", orders[i]);
-        }
+#[test]
+fn test_bessi_multithreaded_basic() {
+    let orders = vec![2, 3, 4, 5];
+    let x = 2.0_f64;
+    
+    // Single-threaded reference
+    let single_threaded: Vec<f64> = orders.iter().map(|&n| bessi(n, x)).collect();
+    
+    // Multi-threaded
+    let multi_threaded = bessi_multithreaded(&orders, x, 2);
+    
+    for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
+        let diff = (st - *mt).abs();
+        assert!(
+            diff < 1e-12,
+            "Mismatch at order {}: single_threaded={}, multi_threaded={}, diff={}",
+            orders[i], st, mt, diff
+        );
     }
-
+}
     #[test]
     #[should_panic(expected = "all orders must be ≥ 2")]
     fn test_bessi_multithreaded_invalid_orders() {
@@ -506,21 +510,25 @@ mod tests {
         assert!(result > 0.0 && result < 1e10);
     }
 
-    #[test]
-    fn test_bessi_precision_consistency() {
-        // Test consistency between f32 and f64
-        let test_cases = [(2, 1.0), (3, 2.0), (4, 3.0)];
+#[test]
+fn test_bessi_precision_consistency() {
+    // Test consistency between f32 and f64
+    let test_cases = [(2, 1.0), (3, 2.0), (4, 3.0)];
+    
+    for &(n, x) in &test_cases {
+        let f32_result = bessi(n, x as f32);
+        let f64_result = bessi(n, x as f64);
+        let diff = (f32_result as f64 - f64_result).abs();
         
-        for &(n, x) in &test_cases {
-            let f32_result = bessi(n, x as f32);
-            let f64_result = bessi(n, x as f64);
-            
-            assert_abs_diff_eq!(f32_result as f64, f64_result, epsilon = 1e-6,
-                "Precision mismatch for I_{}({})", n, x);
-        }
+        assert!(
+            diff < 1e-6,
+            "Precision mismatch for I_{}({}): f32={}, f64={}, diff={}",
+            n, x, f32_result, f64_result, diff
+        );
     }
+} 
 
-    #[test]
+#[test]
     fn test_bessi_monotonicity_with_n() {
         // Test that Iₙ(x) decreases with increasing n for fixed x
         let x = 2.0_f64;

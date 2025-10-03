@@ -77,7 +77,7 @@ impl MiserIntegrator {
     where
         F: Fn(&[f64]) -> f64 + Sync + Send,
     {
-        let ndim = regn.dim();
+        let _ndim = regn.dim();
         let volume = regn.volume();
         
         let results: Vec<(f64, f64)> = (0..npts)
@@ -104,7 +104,7 @@ impl MiserIntegrator {
     where
         F: Fn(&[f64]) -> f64 + Sync + Send,
     {
-        let ndim = regn.dim();
+        let _ndim = regn.dim();
         let npre = ((npts as f64 * self.pfac) as usize).max(self.mnpt);
         
         // Pre-sampling to determine optimal split dimension

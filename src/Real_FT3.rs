@@ -1,6 +1,7 @@
 use std::f64::consts::TAU;
 use rayon::prelude::*;
-use ndarray::{Array3, Array2, ArrayViewMut3, ArrayViewMut2};
+use ndarray::prelude::*;
+use crate::Fourn;
 
 /// 3D Real Fourier Transform implementation
 /// Optimized with f64 precision, parallelization, and cache-friendly operations
@@ -31,7 +32,7 @@ pub fn rlft3(
         // Forward transform: apply 3D FFT
         let mut flat_data = data.as_slice_mut().unwrap().to_vec();
         let nn = [nn1, nn2, nn3_half];
-        fourn(&mut flat_data, &nn, 3, isign);
+        Fourn(&mut flat_data, &nn, 3, isign);
         
         // Update data from flattened array
         let slice = data.as_slice_mut().unwrap();
@@ -40,32 +41,34 @@ pub fn rlft3(
         }
 
         // Store special frequencies - using separate parallel loop with proper borrowing
-        let mut speq_clone = speq.clone();
-        (0..nn1).into_par_iter().for_each(|i1| {
-            let i1 = i1 + 1;
+        let speq_updates: Vec<(usize, usize, f64, f64)> = (0..nn1).into_par_iter().flat_map(|i1| {
+            let mut updates = Vec::new();
             for i2 in 1..=nn2 {
                 let j2 = if i2 != 1 { 2 * (nn2 - i2) + 3 } else { 1 };
-                speq_clone[[i1 - 1, j2 - 1]] = data[[i1 - 1, i2 - 1, 0]];
-                speq_clone[[i1 - 1, j2]] = data[[i1 - 1, i2 - 1, 1]];
+                updates.push((i1, j2 - 1, data[[i1, i2 - 1, 0]], data[[i1, i2 - 1, 1]]));
             }
-        });
-        *speq = speq_clone;
+            updates
+        }).collect();
+
+        for (i1, j2, val1, val2) in speq_updates {
+            speq[[i1, j2]] = val1;
+            speq[[i1, j2 + 1]] = val2;
+        }
     }
 
     // Main processing loop - parallelized over i1 dimension
     for i1 in 1..=nn1 {
         let j1 = if i1 != 1 { nn1 - i1 + 2 } else { 1 };
-        let mut _wr = 1.0;  // Prefix with underscore since it's used in calculations
-        let mut _wi = 0.0;  // Prefix with underscore since it's used in calculations
+        let mut _wr = 1.0;
+        let mut _wi = 0.0;
 
         for i3 in 1..=(nn3 >> 2) + 1 {
             let ii3 = 2 * i3 - 1;
             
-            // Process in parallel over i2 dimension
-            let mut data_clone = data.clone();
-            let mut speq_clone = speq.clone();
-            
-            (1..=nn2).into_par_iter().for_each(|i2| {
+            // Collect updates instead of modifying arrays directly in parallel
+            let updates: Vec<(usize, usize, usize, f64, f64)> = (1..=nn2).into_par_iter().flat_map(|i2| {
+                let mut updates = Vec::new();
+                
                 if i3 == 1 {
                     let j2 = if i2 != 1 { 2 * (nn2 - i2) + 3 } else { 1 };
                     
@@ -79,10 +82,8 @@ pub fn rlft3(
                     let h2i = c2 * (d11 - s1);
                     let h2r = -c2 * (d12 + s2);
                     
-                    data_clone[[i1 - 1, i2 - 1, 0]] = h1r + h2r;
-                    data_clone[[i1 - 1, i2 - 1, 1]] = h1i + h2i;
-                    speq_clone[[j1 - 1, j2 - 1]] = h1r - h2r;
-                    speq_clone[[j1 - 1, j2]] = h2i - h1i;
+                    updates.push((i1 - 1, i2 - 1, 0, h1r + h2r, h1i + h2i));
+                    updates.push((j1 - 1, j2 - 1, usize::MAX, h1r - h2r, h2i - h1i));
                 } else {
                     let j2 = if i2 != 1 { nn2 - i2 + 2 } else { 1 };
                     let j3 = nn3 + 3 - 2 * i3;
@@ -97,15 +98,26 @@ pub fn rlft3(
                     let h2i = c2 * (d_ii3 - d_j3);
                     let h2r = -c2 * (d_ii3_1 + d_j3_1);
                     
-                    data_clone[[i1 - 1, i2 - 1, ii3 - 1]] = h1r + _wr * h2r - _wi * h2i;
-                    data_clone[[i1 - 1, i2 - 1, ii3]] = h1i + _wr * h2i + _wi * h2r;
-                    data_clone[[j1 - 1, j2 - 1, j3 - 1]] = h1r - _wr * h2r + _wi * h2i;
-                    data_clone[[j1 - 1, j2 - 1, j3]] = -h1i + _wr * h2i + _wi * h2r;
+                    updates.push((i1 - 1, i2 - 1, ii3 - 1, h1r + _wr * h2r - _wi * h2i, h1i + _wr * h2i + _wi * h2r));
+                    updates.push((j1 - 1, j2 - 1, j3 - 1, h1r - _wr * h2r + _wi * h2i, -h1i + _wr * h2i + _wi * h2r));
                 }
-            });
-            
-            *data = data_clone;
-            *speq = speq_clone;
+                updates
+            }).collect();
+
+            // Apply updates sequentially
+            for (idx1, idx2, idx3, val1, val2) in updates {
+                if idx3 == usize::MAX {
+                    // This is a speq update
+                    speq[[idx1, idx2]] = val1;
+                    speq[[idx1, idx2 + 1]] = val2;
+                } else {
+                    // This is a data update
+                    data[[idx1, idx2, idx3]] = val1;
+                    if idx3 + 1 < nn3 {
+                        data[[idx1, idx2, idx3 + 1]] = val2;
+                    }
+                }
+            }
 
             // Update rotation factors (sequential due to dependency)
             let wtemp = _wr;
@@ -118,7 +130,7 @@ pub fn rlft3(
         // Inverse transform: apply 3D FFT
         let mut flat_data = data.as_slice_mut().unwrap().to_vec();
         let nn = [nn1, nn2, nn3_half];
-        fourn(&mut flat_data, &nn, 3, isign);
+        Fourn(&mut flat_data, &nn, 3, isign);
         
         // Update data from flattened array
         let slice = data.as_slice_mut().unwrap();
@@ -153,7 +165,7 @@ pub fn rlft3_optimized(
 
     if isign == 1 {
         // Forward transform
-        fourn(data, &[nn1, nn2, nn3_half], 3, isign);
+        Fourn(data, &[nn1, nn2, nn3_half], 3, isign);
 
         // Store special frequencies - sequential to avoid borrowing issues
         for i1 in 0..nn1 {
@@ -173,8 +185,8 @@ pub fn rlft3_optimized(
     // Main processing - using sequential outer loop to avoid borrowing issues
     for i1 in 0..nn1 {
         let j1 = if i1 != 0 { nn1 - i1 - 1 } else { 0 };
-        let mut _wr = 1.0;  // Prefix with underscore since it's used in calculations
-        let mut _wi = 0.0;  // Prefix with underscore since it's used in calculations
+        let mut _wr = 1.0;
+        let mut _wi = 0.0;
 
         for i3 in 0..=(nn3 >> 2) {
             let ii3 = 2 * i3;
@@ -241,15 +253,10 @@ pub fn rlft3_optimized(
 
     if isign == -1 {
         // Inverse transform
-        fourn(data, &[nn1, nn2, nn3_half], 3, isign);
+        Fourn(data, &[nn1, nn2, nn3_half], 3, isign);
     }
 }
 
-/// Wrapper for the existing fourn function
-fn fourn(_data: &mut [f64], _nn: &[usize], _ndim: usize, _isign: i32) {
-    // This would call your existing fourn implementation
-    unimplemented!("Use your fourn implementation")
-}
 
 #[cfg(test)]
 mod tests {

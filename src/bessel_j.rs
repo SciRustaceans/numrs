@@ -391,22 +391,26 @@ mod tests {
         bessj(1, 1.0_f64);
     }
 
-    #[test]
-    fn test_multithreaded_bessj() {
-        let orders = vec![2, 3, 4, 5, 6, 7, 8, 9];
-        let x = 2.5_f64;
-        
-        // Single-threaded reference
-        let single_threaded: Vec<f64> = orders.iter().map(|&n| bessj(n, x)).collect();
-        
-        // Multi-threaded
-        let multi_threaded = bessj_multithreaded(&orders, x, 4);
-        
-        for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
-            assert_abs_diff_eq!(st, *mt, epsilon = 1e-12, "Mismatch at index {}", i);
-        }
+#[test]
+fn test_multithreaded_bessj() {
+    let orders = vec![2, 3, 4, 5, 6, 7, 8, 9];
+    let x = 2.5_f64;
+    
+    // Single-threaded reference
+    let single_threaded: Vec<f64> = orders.iter().map(|&n| bessj(n, x)).collect();
+    
+    // Multi-threaded
+    let multi_threaded = bessj_multithreaded(&orders, x, 4);
+    
+    for (i, (&st, mt)) in single_threaded.iter().zip(multi_threaded.iter()).enumerate() {
+        let diff = (st - *mt).abs();
+        assert!(
+            diff < 1e-12,
+            "Mismatch at index {} (order {}): single_threaded={}, multi_threaded={}, diff={}",
+            i, orders[i], st, mt, diff
+        );
     }
-
+}
     #[test]
     fn test_edge_cases() {
         // Zero input

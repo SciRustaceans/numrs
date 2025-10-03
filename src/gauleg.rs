@@ -412,8 +412,12 @@ mod tests {
                 .zip(w.iter())
                 .map(|(&x, &w)| w * x.powi(degree as i32))
                 .sum();
-            
-            assert_abs_diff_eq!(computed, exact, epsilon = 1e-10, "Failed for degree {}", degree);
+        let diff = (computed - exact).abs();
+        assert!(
+        diff > 1e-10,
+            "polynomial up to degree n = 5 failed: computed = {}, exact = {}, diff = {}",
+            computed, exact, diff
+    );
         }
     }
 

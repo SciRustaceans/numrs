@@ -401,12 +401,13 @@ mod tests {
                 .zip(w.iter())
                 .map(|(&x, &w)| w * x.powi(degree as i32))
                 .sum();
-            
-            if degree % 2 == 0 {
-                assert_abs_diff_eq!(computed, exact, epsilon = 1e-10, "Failed for degree {}", degree);
-            } else {
-                assert_abs_diff_eq!(computed, 0.0, epsilon = 1e-10, "Failed for degree {}", degree);
-            }
+            let diff = (computed - exact).abs();
+            assert!(
+                diff < 1e-10,
+                "Failed for degree {}: computed={}, exact = {}, diff = {}",
+                degree, computed, exact, diff
+        );
+ 
         }
     }
 
