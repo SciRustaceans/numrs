@@ -185,4 +185,260 @@ mod tests {
             assert!((x[i] - expected_x[i]).abs() < 1e-10, "Solution differs at index {}", i);
         }
     }
+
+    #[test]
+    fn test_diagonal_matrix() {
+        let n = 3;
+        let m1 = 0;
+        let m2 = 0;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a diagonal matrix
+        *a.get_mut(0, 0).unwrap() = 2.0;
+        *a.get_mut(1, 1).unwrap() = 3.0;
+        *a.get_mut(2, 2).unwrap() = 4.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![4.0, 9.0, 12.0];
+        let x = lu.solve(&b);
+
+        assert!((lu.determinant() - 24.0).abs() < 1e-10);
+        assert!((x[0] - 2.0).abs() < 1e-10);
+        assert!((x[1] - 3.0).abs() < 1e-10);
+        assert!((x[2] - 3.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_singular_matrix() {
+        let n = 3;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a singular matrix (rows are linearly dependent)
+        *a.get_mut(0, 0).unwrap() = 1.0; *a.get_mut(0, 1).unwrap() = 1.0;
+        *a.get_mut(1, 0).unwrap() = 1.0; *a.get_mut(1, 1).unwrap() = 1.0; *a.get_mut(1, 2).unwrap() = 1.0;
+        *a.get_mut(2, 1).unwrap() = 1.0; *a.get_mut(2, 2).unwrap() = 1.0;
+
+        let result = a.lu_decompose();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_ill_conditioned_matrix() {
+        let n = 3;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a matrix with very small diagonal element
+        *a.get_mut(0, 0).unwrap() = 1e-20; *a.get_mut(0, 1).unwrap() = 1.0;
+        *a.get_mut(1, 0).unwrap() = 1.0; *a.get_mut(1, 1).unwrap() = 2.0; *a.get_mut(1, 2).unwrap() = 1.0;
+        *a.get_mut(2, 1).unwrap() = 1.0; *a.get_mut(2, 2).unwrap() = 2.0;
+
+        let result = a.lu_decompose();
+        // Should handle small diagonal elements with pivoting
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_large_matrix() {
+        let n = 100;
+        let m1 = 2;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a larger banded matrix
+        for i in 0..n {
+            *a.get_mut(i, i).unwrap() = 4.0;  // Diagonal
+            if i > 0 { *a.get_mut(i, i - 1).unwrap() = -1.0; }  // Subdiagonal
+            if i > 1 { *a.get_mut(i, i - 2).unwrap() = 0.5; }  // Second subdiagonal
+            if i < n - 1 { *a.get_mut(i, i + 1).unwrap() = -1.0; }  // Superdiagonal
+        }
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0; n];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite
+        assert!(lu.determinant().is_finite());
+    }
+
+    #[test]
+    fn test_matrix_with_zeros() {
+        let n = 4;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create matrix with some zero elements
+        *a.get_mut(0, 0).unwrap() = 2.0; *a.get_mut(0, 1).unwrap() = 0.0;
+        *a.get_mut(1, 0).unwrap() = 0.0; *a.get_mut(1, 1).unwrap() = 3.0; *a.get_mut(1, 2).unwrap() = 1.0;
+        *a.get_mut(2, 1).unwrap() = 1.0; *a.get_mut(2, 2).unwrap() = 0.0; *a.get_mut(2, 3).unwrap() = 2.0;
+        *a.get_mut(3, 2).unwrap() = 1.0; *a.get_mut(3, 3).unwrap() = 1.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0, 2.0, 3.0, 4.0];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite
+        assert!(lu.determinant().is_finite());
+    }
+
+    #[test]
+    fn test_tridiagonal_symmetric_matrix() {
+        let n = 5;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a symmetric tridiagonal matrix
+        for i in 0..n {
+            *a.get_mut(i, i).unwrap() = 2.0;  // Diagonal
+            if i > 0 { *a.get_mut(i, i - 1).unwrap() = -1.0; }      // Subdiagonal
+            if i < n - 1 { *a.get_mut(i, i + 1).unwrap() = -1.0; }  // Superdiagonal
+        }
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0; n];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite and positive for this matrix
+        let det = lu.determinant();
+        assert!(det.is_finite());
+        assert!(det > 0.0);
+    }
+
+    #[test]
+    fn test_matrix_with_pivoting() {
+        let n = 3;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create a matrix that requires pivoting: small diagonal element
+        *a.get_mut(0, 0).unwrap() = 1e-15; *a.get_mut(0, 1).unwrap() = 1.0;
+        *a.get_mut(1, 0).unwrap() = 1.0; *a.get_mut(1, 1).unwrap() = 1.0; *a.get_mut(1, 2).unwrap() = 1.0;
+        *a.get_mut(2, 1).unwrap() = 1.0; *a.get_mut(2, 2).unwrap() = 1.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0, 2.0, 1.0];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite
+        assert!(lu.determinant().is_finite());
+    }
+
+    #[test]
+    fn test_very_small_matrix() {
+        let n = 1;
+        let m1 = 0;
+        let m2 = 0;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        *a.get_mut(0, 0).unwrap() = 5.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![10.0];
+        let x = lu.solve(&b);
+
+        assert!((lu.determinant() - 5.0).abs() < 1e-10);
+        assert!((x[0] - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_matrix_with_large_values() {
+        let n = 3;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create matrix with very large values
+        *a.get_mut(0, 0).unwrap() = 1e10; *a.get_mut(0, 1).unwrap() = 1e5;
+        *a.get_mut(1, 0).unwrap() = 1e5; *a.get_mut(1, 1).unwrap() = 1e10; *a.get_mut(1, 2).unwrap() = 1e5;
+        *a.get_mut(2, 1).unwrap() = 1e5; *a.get_mut(2, 2).unwrap() = 1e10;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1e10, 2e10, 1e10];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite
+        assert!(lu.determinant().is_finite());
+    }
+
+    #[test]
+    fn test_matrix_with_negative_determinant() {
+        let n = 3;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create matrix with negative determinant (due to row swaps)
+        *a.get_mut(0, 0).unwrap() = 1.0; *a.get_mut(0, 1).unwrap() = 2.0;
+        *a.get_mut(1, 0).unwrap() = 3.0; *a.get_mut(1, 1).unwrap() = 4.0; *a.get_mut(1, 2).unwrap() = 1.0;
+        *a.get_mut(2, 1).unwrap() = 1.0; *a.get_mut(2, 2).unwrap() = 1.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0, 2.0, 1.0];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Determinant might be negative due to pivoting
+        assert!(lu.determinant().is_finite());
+    }
+
+    #[test]
+    fn test_matrix_with_alternating_signs() {
+        let n = 4;
+        let m1 = 1;
+        let m2 = 1;
+        let mut a = BandedMatrix::new(n, m1, m2);
+
+        // Create matrix with alternating signs
+        *a.get_mut(0, 0).unwrap() = 2.0; *a.get_mut(0, 1).unwrap() = -1.0;
+        *a.get_mut(1, 0).unwrap() = -1.0; *a.get_mut(1, 1).unwrap() = 2.0; *a.get_mut(1, 2).unwrap() = -1.0;
+        *a.get_mut(2, 1).unwrap() = -1.0; *a.get_mut(2, 2).unwrap() = 2.0; *a.get_mut(2, 3).unwrap() = -1.0;
+        *a.get_mut(3, 2).unwrap() = -1.0; *a.get_mut(3, 3).unwrap() = 2.0;
+
+        let lu = a.lu_decompose().expect("Decomposition failed");
+        let b = vec![1.0, 0.0, 0.0, 1.0];
+        let x = lu.solve(&b);
+
+        // Check that solution is finite
+        for val in &x {
+            assert!(val.is_finite());
+        }
+        
+        // Check determinant is finite
+        assert!(lu.determinant().is_finite());
+    }
 }

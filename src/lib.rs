@@ -7,11 +7,14 @@
 pub mod utils;
 pub mod banbks; // Stand alone -> Linear algebra
 pub mod bandec; // Stand alone -> Linear algebra routine 
+pub mod lu_decomp; //ludcmp Stand alone -> Linear algebra routine
+pub mod cyclic; // Linear algebra -> stand alone?
+
 //pub mod airy; // (FIX FROM ORIGINAL C CODE) Shoudl call bessik, bessjy, beschd, chebev 
 /*
 
 pub mod bcucof;
-pub mod bcuint;
+pub mod bcuint; // depends on bcucof (fix from C code is my guess) belongs to interpolation
 pub mod beschd;
 pub mod bessel_i;
 pub mod bessel_I1;
@@ -41,7 +44,6 @@ pub mod Correlation;
 pub mod Cos_FT;
 pub mod Cos_FT2;
 pub mod Cosine_Sine_Integrals;
-pub mod cyclic;
 pub mod dawson_integral;
 pub mod ddpoly;
 pub mod dfridr;
@@ -74,7 +76,7 @@ pub mod incomplete_gamma;
 pub mod Jacobian_elliptical;
 pub mod linbcg;
 pub mod locate;
-pub mod lu_decomp;
+
 pub mod midexp;
 pub mod midinf;
 pub mod midpnt;
