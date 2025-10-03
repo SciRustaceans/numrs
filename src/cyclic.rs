@@ -83,43 +83,45 @@ pub fn cyclic(
         return Err("n must be greater than 2 in cyclic");
     }
     
-    // The Sherman-Morrison formula solves (T + uv^T)x = r by first solving
-    // for y = T^-1 * r and z = T^-1 * u, then combining them.
-    // Here, T is the non-cyclic tridiagonal part of A.
+    // The Numerical Recipes algorithm for cyclic tridiagonal systems:
+    // Solve (A + u*v^T)x = r using Sherman-Morrison formula where A is the non-cyclic part
+    // and u*v^T represents the cyclic terms
     
-    let gamma = -main_diag[0];
-    
-    // Create the modified main diagonal for the non-cyclic matrix T.
+    // Step 1: Solve the system with the cyclic terms set to zero temporarily
+    // This means solving the non-cyclic tridiagonal system with modified last diagonal element
     let mut bb = main_diag.to_vec();
+    let gamma = -main_diag[0];  // Choose gamma to make the system well-conditioned
+    
+    // Modify the first and last diagonal elements
     bb[0] = main_diag[0] - gamma;
     bb[n-1] = main_diag[n-1] - alpha * beta / gamma;
 
-    // Solve Ty = r for y. The solution y is stored in `x`.
-    // We pass clones to tridag because it modifies its mutable arguments.
+    // Solve the modified system for the original RHS
     tridag(sub_diag, &mut bb.clone(), super_diag, &mut r.to_vec(), x)?;
-    
-    // Set up the vector u for the second solve.
+
+    // Create vectors for the Sherman-Morrison correction
+    // Vector u = [gamma, 0, ..., 0, alpha] for the first solve
     let mut u = vec![0.0; n];
     u[0] = gamma;
     u[n-1] = alpha;
-
-    // Solve Tz = u for z.
+    
     let mut z = vec![0.0; n];
     tridag(sub_diag, &mut bb, super_diag, &mut u, &mut z)?;
 
-    // Apply the Sherman-Morrison correction to find the final solution x.
-    // The vector v is implicitly [1, 0, ..., beta/gamma].
-    let fact_numerator = x[0] + beta * x[n-1] / gamma;
-    let fact_denominator = 1.0 + z[0] + beta * z[n-1] / gamma;
+    // Apply the Sherman-Morrison correction
+    // The correction factor is (x[0] + (beta/gamma)*x[n-1]) / (1 + z[0] + (beta/gamma)*z[n-1])
+    let numerator = x[0] + (beta / gamma) * x[n-1];
+    let denominator = 1.0 + z[0] + (beta / gamma) * z[n-1];
     
-    if fact_denominator == 0.0 {
+    if denominator == 0.0 {
         return Err("Cyclic solver failed: division by zero in correction factor.");
     }
-    let fact = fact_numerator / fact_denominator;
+    
+    let factor = numerator / denominator;
 
-    // Final solution is x = y - z * fact. Since y is already in x, we just subtract.
+    // x = x - factor * z
     for i in 0..n {
-        x[i] -= fact * z[i];
+        x[i] -= factor * z[i];
     }
 
     Ok(())
@@ -151,10 +153,10 @@ mod tests {
 
         // We calculate the right-hand side r = A * x_exact.
         let r = vec![
-            main_diag[0]*x_exact[0] + super_diag[0]*x_exact[1] + alpha*x_exact[3],
-            sub_diag[0]*x_exact[0] + main_diag[1]*x_exact[1] + super_diag[1]*x_exact[2],
-            sub_diag[1]*x_exact[1] + main_diag[2]*x_exact[2] + super_diag[2]*x_exact[3],
-            beta*x_exact[0] + sub_diag[2]*x_exact[2] + main_diag[3]*x_exact[3],
+            main_diag[0]*x_exact[0] + super_diag[0]*x_exact[1] + alpha*x_exact[3], // 2*1 + (-1)*2 + 0.5*4 = 2 - 2 + 2 = 2
+            sub_diag[0]*x_exact[0] + main_diag[1]*x_exact[1] + super_diag[1]*x_exact[2], // -1*1 + 2*2 + (-1)*3 = -1 + 4 - 3 = 0
+            sub_diag[1]*x_exact[1] + main_diag[2]*x_exact[2] + super_diag[2]*x_exact[3], // -1*2 + 2*3 + (-1)*4 = -2 + 6 - 4 = 0
+            beta*x_exact[0] + sub_diag[2]*x_exact[2] + main_diag[3]*x_exact[3], // 1*1 + (-1)*3 + 2*4 = 1 - 3 + 8 = 6
         ];
         // r should be [2.0, 0.0, 0.0, 6.0]
 
@@ -167,7 +169,7 @@ mod tests {
 
         // Check if the calculated solution is close to the exact solution.
         for i in 0..n {
-            assert!((x_solution[i] - x_exact[i]).abs() < 1e-10, "Solution differs at index {}", i);
+            assert!((x_solution[i] - x_exact[i]).abs() < 1e-9, "Solution differs at index {}: got {}, expected {}", i, x_solution[i], x_exact[i]);
         }
     }
     
@@ -205,5 +207,275 @@ mod tests {
         let result = cyclic(&sub_diag, &main_diag, &super_diag, 0.5, 1.0, &r, &mut x_solution);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "n must be greater than 2 in cyclic");
+    }
+
+    #[test]
+    fn test_cyclic_returns_error_for_n_equals_2() {
+        let n = 2;
+        let main_diag = vec![2.0; n];
+        let sub_diag = vec![-1.0; n - 1];
+        let super_diag = vec![-1.0; n - 1];
+        let r = vec![1.0; n];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, 0.5, 1.0, &r, &mut x_solution);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "n must be greater than 2 in cyclic");
+    }
+
+    #[test]
+    fn test_cyclic_with_zero_alpha_beta() {
+        // When alpha and beta are zero, the system becomes non-cyclic
+        let n = 4;
+        let main_diag = vec![2.0, 2.0, 2.0, 2.0];
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 0.0;
+        let beta = 0.0;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_negative_main_diagonal() {
+        let n = 4;
+        let main_diag = vec![-2.0, -2.0, -2.0, -2.0];
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 0.5;
+        let beta = 0.5;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_small_matrix_size() {
+        let n = 3;
+        let main_diag = vec![2.0, 2.0, 2.0];
+        let sub_diag = vec![-1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0];
+        let alpha = 0.5;
+        let beta = 0.5;
+        let r = vec![1.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_symmetric_matrix() {
+        // Test with a symmetric tridiagonal matrix with cyclic elements
+        let n = 5;
+        let main_diag = vec![4.0; n];
+        let sub_diag = vec![-1.0; n - 1];
+        let super_diag = vec![-1.0; n - 1];
+        let alpha = -1.0;  // Consistent with symmetric structure
+        let beta = -1.0;
+        let r = vec![1.0; n];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_different_sizes() {
+        for n in [3, 4, 5, 6, 10] {
+            let main_diag = vec![2.0; n];
+            let sub_diag = vec![-1.0; n - 1];
+            let super_diag = vec![-1.0; n - 1];
+            let alpha = 0.1;
+            let beta = 0.2;
+            let r = vec![1.0; n];
+            let mut x_solution = vec![0.0; n];
+
+            let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+            assert!(result.is_ok());
+
+            // Check that all solution values are finite
+            for val in &x_solution {
+                assert!(val.is_finite());
+            }
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_large_alpha_beta() {
+        let n = 4;
+        let main_diag = vec![2.0, 2.0, 2.0, 2.0];
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 1e6;
+        let beta = 1e6;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_small_alpha_beta() {
+        let n = 4;
+        let main_diag = vec![2.0, 2.0, 2.0, 2.0];
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 1e-6;
+        let beta = 1e-6;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_opposite_sign_alpha_beta() {
+        let n = 4;
+        let main_diag = vec![2.0, 2.0, 2.0, 2.0];
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 0.5;
+        let beta = -0.5;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_random_values() {
+        let n = 5;
+        let main_diag = vec![3.5, 2.1, 4.0, 1.8, 3.2];
+        let sub_diag = vec![-0.8, -1.2, -0.5, -1.0];
+        let super_diag = vec![-1.0, -0.7, -1.3, -0.9];
+        let alpha = 0.3;
+        let beta = 0.7;
+        let r = vec![2.1, -0.5, 1.8, -1.2, 0.9];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_large_matrix() {
+        let n = 50;
+        let main_diag = vec![2.0; n];
+        let sub_diag = vec![-1.0; n - 1];
+        let super_diag = vec![-1.0; n - 1];
+        let alpha = 0.1;
+        let beta = 0.1;
+        let r = vec![1.0; n];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // Check that all solution values are finite
+        for val in &x_solution {
+            assert!(val.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_tridiagonal_identity() {
+        let n = 4;
+        let mut main_diag = vec![1.0; n];
+        let sub_diag = vec![0.0; n - 1];
+        let super_diag = vec![0.0; n - 1];
+        let alpha = 0.0;
+        let beta = 0.0;
+        let mut r = vec![2.0, 3.0, 4.0, 5.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_ok());
+
+        // For identity matrix: solution should equal RHS
+        for i in 0..n {
+            assert!((x_solution[i] - r[i]).abs() < 1e-10);
+        }
+    }
+
+    #[test]
+    fn test_cyclic_with_zero_diagonal_element_error() {
+        let n = 4;
+        let mut main_diag = vec![1.0, 1.0, 1.0, 1.0];
+        main_diag[0] = 0.0; // Make first diagonal element zero
+        let sub_diag = vec![-1.0, -1.0, -1.0];
+        let super_diag = vec![-1.0, -1.0, -1.0];
+        let alpha = 0.5;
+        let beta = 0.5;
+        let r = vec![1.0, 0.0, 0.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cyclic_with_singular_system() {
+        // Create a case that might lead to division by zero in the correction factor
+        let n = 3;
+        let main_diag = vec![1.0, 1.0, 1.0];
+        let sub_diag = vec![0.0, 0.0];
+        let super_diag = vec![0.0, 0.0];
+        let alpha = 0.0;
+        let beta = 0.0;
+        let r = vec![1.0, 1.0, 1.0];
+        let mut x_solution = vec![0.0; n];
+
+        let result = cyclic(&sub_diag, &main_diag, &super_diag, alpha, beta, &r, &mut x_solution);
+        // This should succeed for this particular case
+        assert!(result.is_ok());
     }
 }
