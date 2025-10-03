@@ -6,11 +6,10 @@
 
 pub mod utils;
 pub mod banbks; // Stand alone -> Linear algebra
-
+pub mod bandec; // Stand alone -> Linear algebra routine 
 //pub mod airy; // (FIX FROM ORIGINAL C CODE) Shoudl call bessik, bessjy, beschd, chebev 
 /*
 
-pub mod bandec;
 pub mod bcucof;
 pub mod bcuint;
 pub mod beschd;
